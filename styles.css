@@ -1,43 +1,86 @@
+/* ============================================================
+   VisionOS Glassmorphism Design System
+   Apple Spatial Computing Aesthetic - Minimal & Neutral
+   ============================================================ */
+
+/* ============ Design Tokens ============ */
+:root {
+  /* Glass Material - neutral dark grays */
+  --glass-bg: rgba(24, 24, 24, 0.65);
+  --glass-bg-lighter: rgba(36, 36, 36, 0.55);
+  --glass-bg-darker: rgba(16, 16, 16, 0.75);
+  --glass-blur: blur(40px) saturate(120%);
+  
+  /* Rim Light & Borders */
+  --rim-border: 1px solid rgba(255, 255, 255, 0.1);
+  --rim-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  
+  /* Depth Shadows */
+  --shadow-floating: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+  --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.2);
+  
+  /* Typography */
+  --text-primary: #FFFFFF;
+  --text-secondary: rgba(255, 255, 255, 0.85);
+  --text-tertiary: rgba(255, 255, 255, 0.5);
+  --text-quaternary: rgba(255, 255, 255, 0.3);
+  
+  /* Interactive (Gaze) States */
+  --gaze-idle: rgba(255, 255, 255, 0.05);
+  --gaze-hover: rgba(255, 255, 255, 0.1);
+  --gaze-active: rgba(255, 255, 255, 0.15);
+  
+  /* Accent Colors */
+  --accent-blue: #60a5fa;
+  --accent-blue-glow: rgba(96, 165, 250, 0.2);
+  --accent-green: #34d399;
+  --accent-red: #f87171;
+  
+  /* Border Radius */
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+}
+
+/* ============ Reset ============ */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-/* Global scrollbar styling */
+/* ============ Scrollbar ============ */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 5px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.12) 100%);
-  border-radius: 5px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-  transition: background 0.2s ease;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.2) 100%);
-  background-clip: padding-box;
+  background: rgba(255, 255, 255, 0.18);
 }
 
 ::-webkit-scrollbar-corner {
   background: transparent;
 }
 
+/* ============ Body ============ */
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-    Ubuntu, Cantarell, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", 
+    "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
   overflow: hidden;
-  background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #0a0a0a 100%);
-  color: #fff;
+  background: #0a0a0a;
+  color: var(--text-primary);
 }
 
 .app {
@@ -47,16 +90,27 @@ body {
   flex-direction: column;
 }
 
+/* ============ Glass Base ============ */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: var(--rim-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--rim-highlight), var(--shadow-floating);
+}
+
+/* ============ Titlebar ============ */
 .titlebar {
-  height: 40px;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(40px) saturate(200%);
-  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  height: 42px;
+  background: rgba(12, 12, 12, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 14px;
   -webkit-app-region: drag;
 }
 
@@ -64,94 +118,87 @@ body {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.btn-icon-sm {
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 5px;
-  color: rgba(255, 255, 255, 0.6);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  -webkit-app-region: no-drag;
-}
-
-.btn-icon-sm:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.95);
+  gap: 10px;
 }
 
 .app-title {
   font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
+/* ============ Window Controls ============ */
 .window-controls {
   display: flex;
-  gap: 12px;
+  gap: 6px;
   -webkit-app-region: no-drag;
 }
 
 .window-btn {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border: none;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-  color: rgba(255, 255, 255, 0.6);
+  background: var(--gaze-idle);
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .window-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.95);
+  background: var(--gaze-hover);
+  color: var(--text-primary);
 }
 
 .window-btn.close:hover {
-  background: #ef4444;
-  color: #fff;
+  background: rgba(248, 113, 113, 0.9);
+  color: white;
 }
 
 .window-btn.active {
-  background: rgba(96, 165, 250, 0.2);
-  color: #60a5fa;
+  background: var(--accent-blue-glow);
+  color: var(--accent-blue);
 }
 
+.btn-icon-sm {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: var(--gaze-idle);
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  -webkit-app-region: no-drag;
+}
+
+.btn-icon-sm:hover {
+  background: var(--gaze-hover);
+  color: var(--text-primary);
+}
+
+/* ============ Main Content ============ */
 .main-content {
   display: flex;
   flex: 1;
   overflow: hidden;
-  padding: 16px;
-  gap: 16px;
+  padding: 12px;
+  gap: 12px;
 }
 
-.glass {
-  background: rgba(20, 20, 20, 0.6);
-  backdrop-filter: blur(40px) saturate(200%);
-  -webkit-backdrop-filter: blur(40px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
-}
-
+/* ============ Sidebar ============ */
 .sidebar {
-  width: 280px;
+  width: 260px;
   display: flex;
   flex-direction: column;
-  padding: 20px;
-  transition: all 0.3s ease;
+  padding: 16px;
+  transition: all 0.25s ease;
 }
 
 .sidebar.collapsed {
@@ -163,97 +210,161 @@ body {
   overflow: hidden;
 }
 
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 14px;
+}
+
+.sidebar-section.flex-1 {
+  flex: 1;
+  min-height: 0;
+}
+
 .sidebar-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .sidebar-header h2 {
-  font-size: 20px;
+  font-size: 15px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--text-primary);
 }
 
+/* ============ Buttons ============ */
 .btn-icon {
   width: 32px;
   height: 32px;
   border: none;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.7);
+  background: var(--gaze-idle);
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .btn-icon:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.95);
-  transform: scale(1.05);
+  background: var(--gaze-hover);
+  color: var(--text-primary);
 }
 
 .btn-icon:active {
-  transform: scale(0.95);
+  background: var(--gaze-active);
 }
 
+/* ============ Folders ============ */
+.folders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.folder-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-tertiary);
+  background: transparent;
+  transition: all 0.15s ease;
+  font-size: 13px;
+}
+
+.folder-item:hover {
+  background: var(--gaze-hover);
+  color: var(--text-secondary);
+}
+
+.folder-item.active {
+  background: var(--gaze-active);
+  color: var(--text-primary);
+}
+
+.folder-item.drag-over {
+  background: var(--accent-blue-glow);
+  outline: 1px dashed var(--accent-blue);
+}
+
+/* ============ Search ============ */
+.search-container {
+  margin-bottom: 10px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.search-input:focus {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.search-input::placeholder {
+  color: var(--text-quaternary);
+}
+
+/* ============ Notes List ============ */
 .notes-list {
   flex: 1;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .notes-list::-webkit-scrollbar {
-  width: 8px;
-}
-
-.notes-list::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 4px;
+  width: 5px;
 }
 
 .notes-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
 }
 
-.notes-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
-  background-clip: padding-box;
-}
-
+/* ============ Note Items ============ */
 .note-item {
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  background: var(--gaze-idle);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .note-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.1);
-  transform: translateX(4px);
+  background: var(--gaze-hover);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .note-item.active {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--gaze-active);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .note-item h3 {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.95);
-  margin-bottom: 4px;
+  color: var(--text-primary);
+  margin-bottom: 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -261,18 +372,66 @@ body {
 
 .note-item .note-date {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-quaternary);
 }
 
+.note-drag-handle {
+  color: rgba(255, 255, 255, 0.12);
+  cursor: grab;
+  font-size: 10px;
+  padding: 2px 0;
+}
+
+.note-drag-handle:hover {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.note-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.note-meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.note-folder {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: var(--accent-blue-glow);
+  color: var(--accent-blue);
+  border-radius: var(--radius-pill);
+}
+
+.note-item.dragging {
+  opacity: 0.5;
+}
+
+.note-item.drag-over {
+  border-color: var(--accent-blue);
+  background: var(--accent-blue-glow);
+}
+
+.empty-state {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-quaternary);
+  font-size: 13px;
+}
+
+/* ============ Editor Container ============ */
 .editor-container {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
+/* ============ Editor Header ============ */
 .editor-header {
-  padding: 16px 20px;
+  padding: 10px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -280,37 +439,54 @@ body {
 
 .toolbar {
   display: flex;
-  gap: 4px;
+  gap: 2px;
 }
 
 .toolbar-btn {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0 6px;
+  align-self: center;
 }
 
 .editor-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
 }
 
+/* ============ Toggle Buttons ============ */
 .btn-toggle {
-  padding: 8px 16px;
+  padding: 6px 14px;
   border: none;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.85);
+  background: var(--gaze-idle);
+  border-radius: var(--radius-pill);
+  color: var(--text-secondary);
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.2s ease;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.15s ease;
 }
 
 .btn-toggle:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.95);
+  background: var(--gaze-hover);
+  color: var(--text-primary);
 }
 
+.btn-toggle.active {
+  background: var(--accent-blue-glow);
+  color: var(--accent-blue);
+}
+
+/* ============ Editor Area ============ */
 .editor-area {
   flex: 1;
   padding: 24px;
@@ -325,157 +501,25 @@ body {
   resize: none;
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--text-primary);
   font-size: 15px;
   line-height: 1.7;
   outline: none;
-  font-family: "SF Mono", "Consolas", "Monaco", monospace;
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
 }
 
 .editor {
   display: block;
 }
 
+.editor::placeholder {
+  color: var(--text-quaternary);
+}
+
 .preview {
   display: none;
   overflow-y: auto;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-    Ubuntu, Cantarell, sans-serif;
-}
-
-.preview::-webkit-scrollbar {
-  width: 8px;
-}
-
-.preview::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.preview::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-}
-
-.preview::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.preview h1,
-.preview h2,
-.preview h3,
-.preview h4,
-.preview h5,
-.preview h6 {
-  margin-top: 24px;
-  margin-bottom: 16px;
-  font-weight: 600;
-  line-height: 1.25;
-  color: rgba(255, 255, 255, 0.95);
-}
-
-.preview h1 {
-  font-size: 2em;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 8px;
-}
-
-.preview h2 {
-  font-size: 1.5em;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  padding-bottom: 6px;
-}
-
-.preview h3 {
-  font-size: 1.25em;
-}
-
-.preview p {
-  margin-bottom: 16px;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.preview code {
-  background: rgba(255, 255, 255, 0.08);
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.9em;
-  font-family: "SF Mono", "Consolas", "Monaco", monospace;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.preview pre {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 16px;
-  border-radius: 8px;
-  overflow-x: auto;
-  margin-bottom: 16px;
-}
-
-.preview pre code {
-  background: transparent;
-  padding: 0;
-}
-
-.preview ul,
-.preview ol {
-  margin-bottom: 16px;
-  padding-left: 24px;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.preview li {
-  margin-bottom: 8px;
-}
-
-.preview a {
-  color: #60a5fa;
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.preview a:hover {
-  color: #93c5fd;
-  text-decoration: underline;
-}
-
-.preview blockquote {
-  border-left: 3px solid rgba(255, 255, 255, 0.2);
-  padding-left: 16px;
-  margin: 16px 0;
-  color: rgba(255, 255, 255, 0.65);
-  font-style: italic;
-  background: rgba(255, 255, 255, 0.02);
-  padding: 12px 16px;
-  border-radius: 4px;
-}
-
-.preview table {
-  border-collapse: collapse;
-  width: 100%;
-  margin-bottom: 16px;
-}
-
-.preview th,
-.preview td {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 8px 12px;
-  text-align: left;
-}
-
-.preview th {
-  background: rgba(255, 255, 255, 0.05);
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
-}
-
-.preview img {
-  max-width: 100%;
-  border-radius: 8px;
-}
-
-.editor::placeholder {
-  color: rgba(255, 255, 255, 0.25);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
 }
 
 .editor.preview-mode {
@@ -486,6 +530,113 @@ body {
   display: block;
 }
 
+/* ============ Preview Typography ============ */
+.preview h1, .preview h2, .preview h3, 
+.preview h4, .preview h5, .preview h6 {
+  margin-top: 24px;
+  margin-bottom: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.preview h1 {
+  font-size: 1.8em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 8px;
+}
+
+.preview h2 {
+  font-size: 1.4em;
+}
+
+.preview h3 {
+  font-size: 1.2em;
+}
+
+.preview p {
+  margin-bottom: 14px;
+  color: var(--text-secondary);
+}
+
+.preview code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+}
+
+.preview pre {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 16px;
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  margin-bottom: 14px;
+}
+
+.preview pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.preview ul, .preview ol {
+  margin-bottom: 14px;
+  padding-left: 20px;
+  color: var(--text-secondary);
+}
+
+.preview li {
+  margin-bottom: 6px;
+}
+
+.preview a {
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+
+.preview a:hover {
+  text-decoration: underline;
+}
+
+.preview blockquote {
+  border-left: 2px solid rgba(255, 255, 255, 0.2);
+  padding: 10px 14px;
+  margin: 14px 0;
+  color: var(--text-tertiary);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.preview table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.preview th, .preview td {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.preview th {
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 600;
+}
+
+.preview img {
+  max-width: 100%;
+  border-radius: var(--radius-md);
+}
+
+/* ============ Vim Mode ============ */
+.editor.vim-command-mode {
+  caret-color: transparent;
+  background: rgba(255, 200, 100, 0.02);
+}
+
+/* ============ Minimal Mode ============ */
 .app.minimal-mode .sidebar {
   display: none;
 }
@@ -508,181 +659,19 @@ body {
   gap: 0;
 }
 
-/* ============ Sidebar Sections ============ */
-.sidebar-section {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 16px;
-}
-
-.sidebar-section.flex-1 {
-  flex: 1;
-  min-height: 0;
-}
-
-/* ============ Folders ============ */
-.folders-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.folder-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  color: rgba(255, 255, 255, 0.7);
-  transition: all 0.2s ease;
-  font-size: 13px;
-}
-
-.folder-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.folder-item.active {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.95);
-}
-
-.folder-item.drag-over {
-  background: rgba(96, 165, 250, 0.2);
-  border: 1px dashed rgba(96, 165, 250, 0.5);
-}
-
-/* ============ Search ============ */
-.search-container {
-  margin-bottom: 12px;
-}
-
-.search-input {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.95);
-  font-size: 13px;
-  outline: none;
-  transition: all 0.2s ease;
-}
-
-.search-input:focus {
-  border-color: rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.search-input::placeholder {
-  color: rgba(255, 255, 255, 0.35);
-}
-
-/* ============ Note Items ============ */
-.note-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 12px 12px 12px 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.note-drag-handle {
-  color: rgba(255, 255, 255, 0.2);
-  cursor: grab;
-  font-size: 10px;
-  line-height: 1;
-  padding: 4px 0;
-  user-select: none;
-}
-
-.note-drag-handle:hover {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.note-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.note-meta {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.note-folder {
-  font-size: 10px;
-  padding: 2px 6px;
-  background: rgba(96, 165, 250, 0.15);
-  color: #60a5fa;
-  border-radius: 4px;
-}
-
-.note-item.dragging {
-  opacity: 0.5;
-}
-
-.note-item.drag-over {
-  border-color: rgba(96, 165, 250, 0.5);
-  background: rgba(96, 165, 250, 0.1);
-}
-
-.empty-state {
-  padding: 16px;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 13px;
-}
-
-/* ============ Toolbar Enhancements ============ */
-.toolbar-divider {
-  width: 1px;
-  height: 20px;
-  background: rgba(255, 255, 255, 0.1);
-  margin: 0 8px;
-}
-
-.btn-toggle.active {
-  background: rgba(96, 165, 250, 0.2);
-  color: #60a5fa;
-}
-
-/* ============ Vim Mode ============ */
-.editor.vim-command-mode {
-  caret-color: transparent;
-  background: rgba(255, 200, 100, 0.05);
-}
-
-.editor.vim-command-mode::after {
-  content: "";
-  position: absolute;
-  width: 8px;
-  height: 1.5em;
-  background: rgba(255, 200, 100, 0.8);
-}
-
 /* ============ Modal ============ */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   z-index: 1000;
 }
 
@@ -693,11 +682,11 @@ body {
 
 .modal {
   width: 90%;
-  max-width: 500px;
+  max-width: 480px;
   max-height: 80vh;
   overflow-y: auto;
   transform: scale(0.95) translateY(10px);
-  transition: transform 0.3s ease;
+  transition: transform 0.2s ease;
 }
 
 .modal-overlay.show .modal {
@@ -708,22 +697,23 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
+  padding: 18px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .modal-header h2 {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--text-primary);
 }
 
 .modal-body {
-  padding: 20px 24px;
+  padding: 18px 20px;
 }
 
+/* ============ Shortcuts ============ */
 .shortcut-section {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .shortcut-section:last-child {
@@ -731,26 +721,26 @@ body {
 }
 
 .shortcut-section h3 {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: rgba(255, 255, 255, 0.5);
-  margin-bottom: 12px;
+  letter-spacing: 0.8px;
+  color: var(--text-quaternary);
+  margin-bottom: 10px;
 }
 
 .shortcut-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 8px 0;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
 .shortcut-row span {
   margin-left: auto;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
 }
 
 kbd {
@@ -758,13 +748,13 @@ kbd {
   padding: 4px 8px;
   font-size: 11px;
   font-family: "SF Mono", "Consolas", monospace;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 5px;
-  color: rgba(255, 255, 255, 0.9);
+  background: var(--gaze-idle);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: var(--text-secondary);
 }
 
-/* ============ Toast Notifications ============ */
+/* ============ Toast ============ */
 .toast-container {
   position: fixed;
   bottom: 24px;
@@ -777,18 +767,19 @@ kbd {
 }
 
 .toast {
-  padding: 12px 20px;
-  border-radius: 10px;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
   font-size: 13px;
   font-weight: 500;
-  background: rgba(30, 30, 30, 0.95);
+  background: var(--glass-bg);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: blur(20px);
+  border: var(--rim-border);
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-elevated);
   transform: translateX(100%);
   opacity: 0;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
   pointer-events: auto;
 }
 
@@ -798,13 +789,13 @@ kbd {
 }
 
 .toast-success {
-  border-left: 3px solid #22c55e;
+  border-left: 3px solid var(--accent-green);
 }
 
 .toast-error {
-  border-left: 3px solid #ef4444;
+  border-left: 3px solid var(--accent-red);
 }
 
 .toast-info {
-  border-left: 3px solid #60a5fa;
+  border-left: 3px solid var(--accent-blue);
 }
