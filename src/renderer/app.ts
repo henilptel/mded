@@ -54,6 +54,7 @@ const api = (window as unknown as { electron: ElectronAPI }).electron;
 // ============ State ============
 let currentNoteId: string | null = null;
 let currentFolder: string = '';
+let activeNoteFolder: string = ''; // Tracks the folder of the currently open note
 let isPreviewMode = false;
 let autoSaveTimer: number | null = null;
 let isSidebarCollapsed = false;
@@ -85,6 +86,11 @@ const shortcutsBtn = document.getElementById('shortcuts-btn') as HTMLButtonEleme
 const shortcutsModal = document.getElementById('shortcuts-modal') as HTMLDivElement;
 const shortcutsClose = document.getElementById('shortcuts-close') as HTMLButtonElement;
 const toastContainer = document.getElementById('toast-container') as HTMLDivElement;
+const createFolderModal = document.getElementById('create-folder-modal') as HTMLDivElement;
+const createFolderInput = document.getElementById('create-folder-input') as HTMLInputElement;
+const createFolderConfirm = document.getElementById('create-folder-confirm') as HTMLButtonElement;
+const createFolderCancel = document.getElementById('create-folder-cancel') as HTMLButtonElement;
+const createFolderClose = document.getElementById('create-folder-close') as HTMLButtonElement;
 
 // ============ Toast Notifications ============
 function showToast(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
@@ -193,22 +199,60 @@ async function selectFolder(folderPath: string): Promise<void> {
   await loadNotes();
 }
 
-newFolderBtn?.addEventListener('click', async () => {
-  const name = prompt('Enter folder name:');
-  if (name && name.trim()) {
-    const result = await api.createFolder(name.trim());
+newFolderBtn?.addEventListener('click', () => {
+  createFolderInput.value = '';
+  createFolderModal.classList.add('show');
+  createFolderInput.focus();
+});
+
+function closeCreateFolderModal() {
+  createFolderModal.classList.remove('show');
+}
+
+createFolderClose?.addEventListener('click', closeCreateFolderModal);
+createFolderCancel?.addEventListener('click', closeCreateFolderModal);
+
+createFolderModal?.addEventListener('click', (e) => {
+  if (e.target === createFolderModal) {
+    closeCreateFolderModal();
+  }
+});
+
+async function createFolder() {
+  const name = createFolderInput.value.trim();
+  if (name) {
+    const result = await api.createFolder(name);
     if (result.success) {
       showToast('Folder created', 'success');
       await loadFolders();
+      closeCreateFolderModal();
     } else {
       showToast(`Failed to create folder: ${result.error}`, 'error');
     }
+  }
+}
+
+createFolderConfirm?.addEventListener('click', createFolder);
+
+createFolderInput?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    createFolder();
+  }
+  if (e.key === 'Escape') {
+    closeCreateFolderModal();
   }
 });
 
 // ============ Note Management ============
 async function loadNotes(): Promise<void> {
-  const notes = await api.listNotes(currentFolder || undefined);
+  const targetFolder = currentFolder;
+  const notes = await api.listNotes(targetFolder || undefined);
+  
+  // Prevent race condition: if folder changed while loading, discard results
+  if (currentFolder !== targetFolder) {
+    return;
+  }
+
   noteOrder = await api.getNoteOrder();
   
   notesList.innerHTML = '';
@@ -312,7 +356,10 @@ async function loadNotes(): Promise<void> {
   // Highlight current note
   if (currentNoteId) {
     document.querySelectorAll('.note-item').forEach(item => {
-      item.classList.toggle('active', (item as HTMLElement).dataset.noteId === currentNoteId);
+      const itemNoteId = (item as HTMLElement).dataset.noteId;
+      const itemFolder = (item as HTMLElement).dataset.folder || '';
+      const isActive = itemNoteId === currentNoteId && itemFolder === activeNoteFolder;
+      item.classList.toggle('active', isActive);
     });
   } else if (sortedNotes.length > 0) {
     loadNote(sortedNotes[0].id, sortedNotes[0].folder);
@@ -331,7 +378,7 @@ async function loadNote(noteId: string, folder: string): Promise<void> {
   }
   
   currentNoteId = noteId;
-  currentFolder = folder;
+  activeNoteFolder = folder;
   
   const result = await api.readNote(noteId, folder || undefined);
   if (result.success && result.content !== undefined) {
@@ -342,13 +389,16 @@ async function loadNote(noteId: string, folder: string): Promise<void> {
   }
   
   document.querySelectorAll('.note-item').forEach(item => {
-    item.classList.toggle('active', (item as HTMLElement).dataset.noteId === noteId);
+    const itemNoteId = (item as HTMLElement).dataset.noteId;
+    const itemFolder = (item as HTMLElement).dataset.folder || '';
+    const isActive = itemNoteId === noteId && itemFolder === folder;
+    item.classList.toggle('active', isActive);
   });
 }
 
 async function saveCurrentNote(): Promise<void> {
   if (currentNoteId && editor.value) {
-    const result = await api.saveNote(currentNoteId, editor.value, currentFolder || undefined);
+    const result = await api.saveNote(currentNoteId, editor.value, activeNoteFolder || undefined);
     if (!result.success) {
       showToast(`Failed to save: ${result.error}`, 'error');
     }
@@ -723,7 +773,7 @@ deleteNoteBtn?.addEventListener('click', async () => {
   
   const confirmed = confirm('Are you sure you want to delete this note?');
   if (confirmed) {
-    const result = await api.deleteNote(currentNoteId, currentFolder || undefined);
+    const result = await api.deleteNote(currentNoteId, activeNoteFolder || undefined);
     if (result.success) {
       showToast('Note deleted', 'success');
       currentNoteId = null;
