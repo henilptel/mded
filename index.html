@@ -18,6 +18,7 @@
           </svg>
         </button>
         <span class="app-title">MDed</span>
+        <span id="save-indicator" style="font-size: 11px; color: var(--text-quaternary); margin-left: 12px; opacity: 0; transition: opacity 0.3s;">Saved</span>
       </div>
       <div class="window-controls">
         <button class="window-btn" id="shortcuts-btn" title="Keyboard Shortcuts (Ctrl+/)">
@@ -254,6 +255,50 @@
         <div style="display: flex; justify-content: flex-end; gap: 8px;">
           <button class="btn-toggle" id="create-folder-cancel">Cancel</button>
           <button class="btn-toggle active" id="create-folder-confirm">Create</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rename Modal -->
+  <div class="modal-overlay" id="rename-modal">
+    <div class="modal glass">
+      <div class="modal-header">
+        <h2 id="rename-modal-title">Rename</h2>
+        <button class="btn-icon-sm" id="rename-close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="rename-input" placeholder="New Name" class="search-input" style="margin-bottom: 16px;">
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button class="btn-toggle" id="rename-cancel">Cancel</button>
+          <button class="btn-toggle active" id="rename-confirm">Rename</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div class="modal-overlay" id="confirm-modal">
+    <div class="modal glass">
+      <div class="modal-header">
+        <h2 id="confirm-modal-title">Confirm Action</h2>
+        <button class="btn-icon-sm" id="confirm-close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-modal-message" style="margin-bottom: 20px; color: var(--text-secondary);">Are you sure?</p>
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button class="btn-toggle" id="confirm-cancel">Cancel</button>
+          <button class="btn-toggle" id="confirm-ok" style="background: rgba(248, 113, 113, 0.2); color: #f87171;">Delete</button>
         </div>
       </div>
     </div>

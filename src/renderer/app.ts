@@ -22,6 +22,9 @@ interface ApiResult {
 interface ElectronAPI {
   listFolders: () => Promise<FolderInfo[]>;
   createFolder: (name: string) => Promise<ApiResult>;
+  deleteFolder: (name: string) => Promise<ApiResult>;
+  renameFolder: (oldName: string, newName: string) => Promise<ApiResult>;
+  renameNote: (noteId: string, newName: string, folder?: string) => Promise<ApiResult>;
   moveNoteToFolder: (noteId: string, currentFolder: string, targetFolder: string) => Promise<ApiResult>;
   listNotes: (folder?: string) => Promise<NoteInfo[]>;
   readNote: (noteId: string, folder?: string) => Promise<ApiResult>;
@@ -94,6 +97,24 @@ const createFolderConfirm = document.getElementById('create-folder-confirm') as 
 const createFolderCancel = document.getElementById('create-folder-cancel') as HTMLButtonElement;
 const createFolderClose = document.getElementById('create-folder-close') as HTMLButtonElement;
 
+// Rename Modal
+const renameModal = document.getElementById('rename-modal') as HTMLDivElement;
+const renameInput = document.getElementById('rename-input') as HTMLInputElement;
+const renameConfirm = document.getElementById('rename-confirm') as HTMLButtonElement;
+const renameCancel = document.getElementById('rename-cancel') as HTMLButtonElement;
+const renameClose = document.getElementById('rename-close') as HTMLButtonElement;
+const renameModalTitle = document.getElementById('rename-modal-title') as HTMLHeadingElement;
+
+// Confirm Modal
+const confirmModal = document.getElementById('confirm-modal') as HTMLDivElement;
+const confirmMessage = document.getElementById('confirm-modal-message') as HTMLParagraphElement;
+const confirmOk = document.getElementById('confirm-ok') as HTMLButtonElement;
+const confirmCancel = document.getElementById('confirm-cancel') as HTMLButtonElement;
+const confirmClose = document.getElementById('confirm-close') as HTMLButtonElement;
+const confirmModalTitle = document.getElementById('confirm-modal-title') as HTMLHeadingElement;
+
+const saveIndicator = document.getElementById('save-indicator') as HTMLSpanElement;
+
 // ============ Toast Notifications ============
 function showToast(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
   const toast = document.createElement('div');
@@ -162,8 +183,84 @@ async function loadFolders(): Promise<void> {
       ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>'
       : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>';
     
-    folderItem.innerHTML = `${icon}<span>${folder.name}</span>`;
-    folderItem.addEventListener('click', () => selectFolder(folder.path));
+    // Folder content
+    const content = document.createElement('div');
+    content.className = 'folder-content';
+    content.style.display = 'flex';
+    content.style.alignItems = 'center';
+    content.style.gap = '8px';
+    content.style.flex = '1';
+    content.innerHTML = `${icon}<span>${folder.name}</span>`;
+    
+    folderItem.appendChild(content);
+    
+    // Folder actions (only for non-root folders)
+    if (folder.path !== '') {
+      const actions = document.createElement('div');
+      actions.className = 'folder-actions';
+      actions.style.display = 'flex';
+      actions.style.gap = '4px';
+      
+      const renameBtn = document.createElement('button');
+      renameBtn.className = 'btn-icon-sm';
+      renameBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
+      renameBtn.title = 'Rename Folder';
+      renameBtn.style.width = '20px';
+      renameBtn.style.height = '20px';
+      
+      renameBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showRenameModal('Rename Folder', folder.name, async (newName) => {
+          if (newName && newName !== folder.name) {
+            const result = await api.renameFolder(folder.name, newName);
+            if (result.success) {
+              showToast('Folder renamed', 'success');
+              if (currentFolder === folder.path) {
+                currentFolder = newName;
+              }
+              await loadFolders();
+            } else {
+              showToast(`Failed to rename: ${result.error}`, 'error');
+            }
+          }
+        });
+      });
+      
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'btn-icon-sm';
+      deleteBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+      deleteBtn.title = 'Delete Folder';
+      deleteBtn.style.width = '20px';
+      deleteBtn.style.height = '20px';
+      
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showConfirmModal('Delete Folder', `Are you sure you want to delete "${folder.name}" and all its contents? This cannot be undone.`, 'Delete', async () => {
+          const result = await api.deleteFolder(folder.name);
+          if (result.success) {
+            showToast('Folder deleted', 'success');
+            if (currentFolder === folder.path) {
+              currentFolder = '';
+            }
+            await loadFolders();
+          } else {
+            showToast(`Failed to delete: ${result.error}`, 'error');
+          }
+        });
+      });
+      
+      actions.appendChild(renameBtn);
+      actions.appendChild(deleteBtn);
+      folderItem.appendChild(actions);
+    }
+    
+    // Click handling on the item itself (excluding buttons)
+    folderItem.addEventListener('click', (e) => {
+       // Only select if not clicking actions
+       if (!(e.target as HTMLElement).closest('.folder-actions')) {
+         selectFolder(folder.path);
+       }
+    });
     
     // Drop zone for notes
     folderItem.addEventListener('dragover', (e) => {
@@ -207,17 +304,79 @@ newFolderBtn?.addEventListener('click', () => {
   createFolderInput.focus();
 });
 
-function closeCreateFolderModal() {
-  createFolderModal.classList.remove('show');
+// ============ Modals ============
+
+function closeAllModals() {
+  document.querySelectorAll('.modal-overlay').forEach(modal => {
+    modal.classList.remove('show');
+  });
 }
 
-createFolderClose?.addEventListener('click', closeCreateFolderModal);
-createFolderCancel?.addEventListener('click', closeCreateFolderModal);
+// Generic Modal Close Handlers
+[createFolderClose, createFolderCancel, renameClose, renameCancel, confirmClose, confirmCancel].forEach(btn => {
+  btn?.addEventListener('click', closeAllModals);
+});
 
-createFolderModal?.addEventListener('click', (e) => {
-  if (e.target === createFolderModal) {
-    closeCreateFolderModal();
+document.querySelectorAll('.modal-overlay').forEach(modal => {
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeAllModals();
+  });
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeAllModals();
+});
+
+// Confirm Modal Logic
+let onConfirmAction: (() => void) | null = null;
+
+function showConfirmModal(title: string, message: string, actionText: string, onConfirm: () => void) {
+  confirmModalTitle.textContent = title;
+  confirmMessage.textContent = message;
+  confirmOk.textContent = actionText;
+  onConfirmAction = onConfirm;
+  confirmModal.classList.add('show');
+}
+
+confirmOk?.addEventListener('click', () => {
+  if (onConfirmAction) {
+    onConfirmAction();
+    onConfirmAction = null;
   }
+  closeAllModals();
+});
+
+// Rename Modal Logic
+let onRenameAction: ((newName: string) => void) | null = null;
+
+function showRenameModal(title: string, currentName: string, onRename: (newName: string) => void) {
+  renameModalTitle.textContent = title;
+  renameInput.value = currentName;
+  onRenameAction = onRename;
+  renameModal.classList.add('show');
+  renameInput.focus();
+}
+
+renameConfirm?.addEventListener('click', () => {
+  const newName = renameInput.value.trim();
+  if (newName && onRenameAction) {
+    onRenameAction(newName);
+    onRenameAction = null;
+    closeAllModals();
+  }
+});
+
+renameInput?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    renameConfirm.click();
+  }
+});
+
+// Create Folder Logic
+newFolderBtn?.addEventListener('click', () => {
+  createFolderInput.value = '';
+  createFolderModal.classList.add('show');
+  createFolderInput.focus();
 });
 
 async function createFolder() {
@@ -227,7 +386,7 @@ async function createFolder() {
     if (result.success) {
       showToast('Folder created', 'success');
       await loadFolders();
-      closeCreateFolderModal();
+      closeAllModals();
     } else {
       showToast(`Failed to create folder: ${result.error}`, 'error');
     }
@@ -240,34 +399,44 @@ createFolderInput?.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     createFolder();
   }
-  if (e.key === 'Escape') {
-    closeCreateFolderModal();
-  }
 });
 
 // ============ Note Management ============
 async function loadNotes(): Promise<void> {
-  const targetFolder = currentFolder;
-  const notes = await api.listNotes(targetFolder || undefined);
+  const searchQuery = searchInput.value.toLowerCase().trim();
+  const isSearchMode = searchQuery.length > 0;
   
-  // Prevent race condition: if folder changed while loading, discard results
-  if (currentFolder !== targetFolder) {
-    return;
-  }
-
+  // If searching, fetch all notes (pass undefined as folder). Otherwise fetch current folder.
+  // Note: For a real app with thousands of notes, we'd want server-side search.
+  // Here we fetch all and filter client-side for "global search" feel.
+  const fetchFolder = isSearchMode ? undefined : (currentFolder || undefined);
+  
+  let notes = await api.listNotes(fetchFolder);
+  
   noteOrder = await api.getNoteOrder();
   
   notesList.innerHTML = '';
   
+  // Filter by search query if needed
+  if (isSearchMode) {
+    notes = notes.filter(note => note.title.toLowerCase().includes(searchQuery));
+  }
+  
   if (notes.length === 0) {
-    notesList.innerHTML = '<div class="empty-state">No notes yet</div>';
+    notesList.innerHTML = `<div class="empty-state">${isSearchMode ? 'No matching notes' : 'No notes yet'}</div>`;
     return;
   }
   
-  // Sort by custom order if available
+  // Sort by custom order if available AND not searching
+  // (Search results should probably be by relevance or date, not manual order)
   const orderKey = currentFolder || '_root';
   const orderedIds = noteOrder[orderKey] || [];
+  
   const sortedNotes = [...notes].sort((a, b) => {
+    if (isSearchMode) {
+       // Sort by date in search mode
+       return new Date(b.modified).getTime() - new Date(a.modified).getTime();
+    }
     const aIndex = orderedIds.indexOf(a.id);
     const bIndex = orderedIds.indexOf(b.id);
     if (aIndex === -1 && bIndex === -1) {
@@ -288,20 +457,92 @@ async function loadNotes(): Promise<void> {
     const date = new Date(note.modified);
     const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     
-    noteItem.innerHTML = `
-      <div class="note-drag-handle">⋮⋮</div>
-      <div class="note-content">
+    // Note Item Content
+    const content = document.createElement('div');
+    content.className = 'note-content';
+    content.innerHTML = `
         <h3>${escapeHtml(note.title)}</h3>
         <div class="note-meta">
           <span class="note-date">${dateStr}</span>
           ${note.folder ? `<span class="note-folder">${note.folder}</span>` : ''}
         </div>
-      </div>
     `;
+
+    // Note Actions
+    const actions = document.createElement('div');
+    actions.className = 'note-actions';
+    actions.style.display = 'flex';
+    actions.style.gap = '2px';
+    actions.style.marginLeft = 'auto';
+    actions.style.opacity = '0.5';
     
-    noteItem.addEventListener('click', () => loadNote(note.id, note.folder));
+    // Rename Button
+    const renameBtn = document.createElement('button');
+    renameBtn.className = 'btn-icon-sm';
+    renameBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
+    renameBtn.title = 'Rename File';
+    renameBtn.style.padding = '4px';
     
-    // Drag and drop
+    renameBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const currentName = note.id.replace('.md', '');
+        showRenameModal('Rename Note File', currentName, async (newName) => {
+             if (newName && newName !== currentName) {
+                 const result = await api.renameNote(note.id, newName, note.folder);
+                 if (result.success) {
+                     showToast('Note renamed', 'success');
+                     if (currentNoteId === note.id) {
+                         currentNoteId = result.noteId || newName + '.md';
+                     }
+                     await loadNotes();
+                 } else {
+                     showToast(`Failed to rename: ${result.error}`, 'error');
+                 }
+             }
+        });
+    });
+
+    // Delete Button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'btn-icon-sm';
+    deleteBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+    deleteBtn.title = 'Delete Note';
+    deleteBtn.style.padding = '4px';
+
+    deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showConfirmModal('Delete Note', `Are you sure you want to delete "${note.title}"?`, 'Delete', async () => {
+            const result = await api.deleteNote(note.id, note.folder || undefined);
+            if (result.success) {
+                showToast('Note deleted', 'success');
+                if (currentNoteId === note.id) {
+                    currentNoteId = null;
+                    editor.value = '';
+                    preview.innerHTML = '';
+                    activeNoteFolder = '';
+                }
+                await loadNotes();
+            } else {
+                showToast(`Failed to delete: ${result.error}`, 'error');
+            }
+        });
+    });
+
+    actions.appendChild(renameBtn);
+    actions.appendChild(deleteBtn);
+    
+    noteItem.innerHTML = `<div class="note-drag-handle">⋮⋮</div>`;
+    noteItem.appendChild(content);
+    noteItem.appendChild(actions);
+    
+    noteItem.addEventListener('click', (e) => {
+        // Don't trigger load if clicking actions
+        if (!(e.target as HTMLElement).closest('.note-actions')) {
+            loadNote(note.id, note.folder);
+        }
+    });
+
+    // ... Drag and Drop logic ...
     noteItem.addEventListener('dragstart', (e) => {
       draggedNoteId = note.id;
       draggedNoteFolder = note.folder;
@@ -335,7 +576,8 @@ async function loadNotes(): Promise<void> {
       e.stopPropagation();
       noteItem.classList.remove('drag-over');
       
-      if (draggedNoteId && draggedNoteId !== note.id && draggedNoteFolder === note.folder) {
+      // Only reorder if not searching and in same folder
+      if (!isSearchMode && draggedNoteId && draggedNoteId !== note.id && draggedNoteFolder === note.folder) {
         // Reorder within same folder
         const orderKey = note.folder || '_root';
         const currentOrder = noteOrder[orderKey] || sortedNotes.map(n => n.id);
@@ -398,14 +640,6 @@ async function loadNote(noteId: string, folder: string): Promise<void> {
   });
 }
 
-async function saveCurrentNote(): Promise<void> {
-  if (currentNoteId && editor.value) {
-    const result = await api.saveNote(currentNoteId, editor.value, activeNoteFolder || undefined);
-    if (!result.success) {
-      showToast(`Failed to save: ${result.error}`, 'error');
-    }
-  }
-}
 
 function updatePreview(): void {
   const markdown = editor.value;
@@ -738,19 +972,16 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
 
 // ============ Search ============
 searchInput?.addEventListener('input', () => {
-  const query = searchInput.value.toLowerCase().trim();
-  const noteItems = notesList.querySelectorAll('.note-item');
-  
-  noteItems.forEach(item => {
-    const title = item.querySelector('h3')?.textContent?.toLowerCase() || '';
-    const matches = query === '' || title.includes(query);
-    (item as HTMLElement).style.display = matches ? '' : 'none';
-  });
+  // Re-load notes to trigger global search filtering
+  loadNotes(); 
 });
 
 // ============ Editor Events ============
 editor.addEventListener('input', () => {
   updatePreview();
+  
+  saveIndicator.textContent = 'Saving...';
+  saveIndicator.style.opacity = '1';
   
   if (autoSaveTimer) {
     clearTimeout(autoSaveTimer);
@@ -773,14 +1004,11 @@ newNoteBtn?.addEventListener('click', async () => {
   }
 });
 
-
-
 deleteNoteBtn?.addEventListener('click', async () => {
   if (!currentNoteId) return;
   
-  const confirmed = confirm('Are you sure you want to delete this note?');
-  if (confirmed) {
-    const result = await api.deleteNote(currentNoteId, activeNoteFolder || undefined);
+  showConfirmModal('Delete Note', 'Are you sure you want to delete this note?', 'Delete', async () => {
+    const result = await api.deleteNote(currentNoteId!, activeNoteFolder || undefined);
     if (result.success) {
       showToast('Note deleted', 'success');
       currentNoteId = null;
@@ -790,8 +1018,25 @@ deleteNoteBtn?.addEventListener('click', async () => {
     } else {
       showToast(`Failed to delete: ${result.error}`, 'error');
     }
-  }
+  });
 });
+
+async function saveCurrentNote(): Promise<void> {
+  if (currentNoteId && editor.value) {
+    const result = await api.saveNote(currentNoteId, editor.value, activeNoteFolder || undefined);
+    if (!result.success) {
+      showToast(`Failed to save: ${result.error}`, 'error');
+      saveIndicator.textContent = 'Error';
+      saveIndicator.style.color = '#f87171';
+    } else {
+      saveIndicator.textContent = 'Saved';
+      saveIndicator.style.color = 'var(--text-quaternary)';
+      setTimeout(() => {
+          saveIndicator.style.opacity = '0';
+      }, 2000);
+    }
+  }
+}
 
 // ============ Lifecycle ============
 window.addEventListener('beforeunload', async () => {

@@ -219,6 +219,52 @@ ipcMain.handle('create-folder', async (_event, folderName: string) => {
   }
 });
 
+ipcMain.handle('delete-folder', async (_event, folderName: string) => {
+  try {
+    const folderPath = validatePath(NOTES_DIR, folderName);
+    await fs.rm(folderPath, { recursive: true, force: true });
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting folder:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle('rename-folder', async (_event, oldName: string, newName: string) => {
+  try {
+    const oldPath = validatePath(NOTES_DIR, oldName);
+    const newPath = validatePath(NOTES_DIR, newName);
+    await fs.rename(oldPath, newPath);
+    return { success: true };
+  } catch (error) {
+    console.error('Error renaming folder:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle('rename-note', async (_event, noteId: string, newName: string, folder?: string) => {
+  try {
+    // Ensure new name ends with .md
+    if (!newName.endsWith('.md')) {
+      newName += '.md';
+    }
+    
+    const oldPath = folder 
+      ? validatePath(path.join(NOTES_DIR, folder), noteId)
+      : validatePath(NOTES_DIR, noteId);
+      
+    const newPath = folder
+      ? validatePath(path.join(NOTES_DIR, folder), newName)
+      : validatePath(NOTES_DIR, newName);
+
+    await fs.rename(oldPath, newPath);
+    return { success: true, noteId: newName };
+  } catch (error) {
+    console.error('Error renaming note:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
 ipcMain.handle('move-note-to-folder', async (_event, noteId: string, currentFolder: string, targetFolder: string) => {
   try {
     const currentPath = currentFolder 
@@ -244,41 +290,21 @@ async function getNotesFromDir(dir: string, folder: string = ''): Promise<NoteIn
   
   const notes = await Promise.all(mdFiles.map(async (file) => {
     const filePath = path.join(dir, file);
-    const stats = await fs.stat(filePath);
-    
-    // Read only the first 256 bytes to extract the title
-    let title = file.replace('.md', '');
-    let fileHandle = null;
     try {
-      fileHandle = await fs.open(filePath, 'r');
-      // Create a buffer for reading
-      const buffer = Buffer.alloc(256);
-      const { bytesRead } = await fileHandle.read(buffer, 0, 256, 0);
-      
-      if (bytesRead > 0) {
-        const content = buffer.toString('utf-8', 0, bytesRead);
-        const firstLine = content.split('\n')[0].trim();
-        if (firstLine) {
-            title = firstLine.replace(/^#\s*/, '');
-        }
-      }
+      const stats = await fs.stat(filePath);
+      return {
+        id: file,
+        title: file.replace('.md', ''),
+        modified: stats.mtime,
+        folder
+      };
     } catch (err) {
-      console.error(`Error reading title for ${file}:`, err);
-    } finally {
-      if (fileHandle) {
-        await fileHandle.close();
-      }
+      console.error(`Error getting stats for ${file}:`, err);
+      return null;
     }
-
-    return {
-      id: file,
-      title,
-      modified: stats.mtime,
-      folder
-    };
   }));
   
-  return notes;
+  return notes.filter(n => n !== null) as NoteInfo[];
 }
 
 ipcMain.handle('list-notes', async (_event, folder?: string) => {

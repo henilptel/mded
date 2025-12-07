@@ -24,6 +24,9 @@ const electronAPI = {
   // Folder operations
   listFolders: (): Promise<FolderInfo[]> => ipcRenderer.invoke('list-folders'),
   createFolder: (name: string): Promise<ApiResult> => ipcRenderer.invoke('create-folder', name),
+  deleteFolder: (name: string): Promise<ApiResult> => ipcRenderer.invoke('delete-folder', name),
+  renameFolder: (oldName: string, newName: string): Promise<ApiResult> => ipcRenderer.invoke('rename-folder', oldName, newName),
+  renameNote: (noteId: string, newName: string, folder?: string): Promise<ApiResult> => ipcRenderer.invoke('rename-note', noteId, newName, folder),
   moveNoteToFolder: (noteId: string, currentFolder: string, targetFolder: string): Promise<ApiResult> => 
     ipcRenderer.invoke('move-note-to-folder', noteId, currentFolder, targetFolder),
   
