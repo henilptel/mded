@@ -34,6 +34,8 @@ interface ElectronAPI {
   maximizeWindow: () => void;
   closeWindow: () => void;
   setAlwaysOnTop: (flag: boolean) => Promise<ApiResult>;
+  getGlobalShortcut: () => Promise<string>;
+  setGlobalShortcut: (key: string) => Promise<ApiResult>;
 }
 
 interface MarkedStatic {
@@ -488,6 +490,9 @@ document.querySelectorAll('.toolbar-btn').forEach(btn => {
       case 'ol':
         insertLineMarkdown('1. ');
         break;
+      case 'todo':
+        insertLineMarkdown('- [ ] ');
+        break;
     }
   });
 });
@@ -768,6 +773,8 @@ newNoteBtn?.addEventListener('click', async () => {
   }
 });
 
+
+
 deleteNoteBtn?.addEventListener('click', async () => {
   if (!currentNoteId) return;
   
@@ -793,10 +800,80 @@ window.addEventListener('beforeunload', async () => {
   }
 });
 
-// ============ Initialize ============
+// ============ Shortcut Recording ============
+const shortcutDisplay = document.getElementById('shortcut-display') as HTMLDivElement;
+const recordShortcutBtn = document.getElementById('record-shortcut-btn') as HTMLButtonElement;
+let isRecordingShortcut = false;
+
+async function loadGlobalShortcut() {
+  if (shortcutDisplay) {
+    const key = await api.getGlobalShortcut();
+    shortcutDisplay.textContent = key;
+  }
+}
+
+if (recordShortcutBtn) {
+  recordShortcutBtn.addEventListener('click', () => {
+    isRecordingShortcut = true;
+    recordShortcutBtn.textContent = 'Press Key...';
+    recordShortcutBtn.classList.add('active');
+    shortcutDisplay.classList.add('recording');
+  });
+}
+
+document.addEventListener('keydown', async (e) => {
+  if (!isRecordingShortcut) return;
+  
+  e.preventDefault();
+  e.stopPropagation();
+  
+  // Ignore modifier-only presses
+  if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return;
+  
+  const parts = [];
+  if (e.metaKey) parts.push('CommandOrControl'); // Electron uses CommandOrControl for cross-platform
+  else if (e.ctrlKey) parts.push('CommandOrControl');
+  
+  if (e.altKey) parts.push('Alt');
+  if (e.shiftKey) parts.push('Shift');
+  
+  // Map special keys
+  let key = e.key;
+  if (key === ' ') key = 'Space';
+  else if (key.length === 1) key = key.toUpperCase();
+  else if (key === 'ArrowUp') key = 'Up';
+  else if (key === 'ArrowDown') key = 'Down';
+  else if (key === 'ArrowLeft') key = 'Left';
+  else if (key === 'ArrowRight') key = 'Right';
+  
+  parts.push(key);
+  
+  const accelerator = parts.join('+');
+  
+  // Attempt to save
+  const result = await api.setGlobalShortcut(accelerator);
+  
+  if (result.success) {
+    shortcutDisplay.textContent = accelerator;
+    showToast(`Global shortcut set to ${accelerator}`, 'success');
+  } else {
+    showToast(`Failed to set shortcut: ${result.error}`, 'error');
+    // Reload old one
+    loadGlobalShortcut();
+  }
+  
+  // Reset state
+  isRecordingShortcut = false;
+  recordShortcutBtn.textContent = 'Record';
+  recordShortcutBtn.classList.remove('active');
+  shortcutDisplay.classList.remove('recording');
+});
+
+// Update init to load shortcut
 async function init(): Promise<void> {
   await loadFolders();
   await loadNotes();
+  await loadGlobalShortcut();
 }
 
 init();

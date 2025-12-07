@@ -43,7 +43,9 @@ const electronAPI = {
   minimizeWindow: (): void => ipcRenderer.send('minimize-window'),
   maximizeWindow: (): void => ipcRenderer.send('maximize-window'),
   closeWindow: (): void => ipcRenderer.send('close-window'),
-  setAlwaysOnTop: (flag: boolean): Promise<ApiResult> => ipcRenderer.invoke('set-always-on-top', flag)
+  setAlwaysOnTop: (flag: boolean): Promise<ApiResult> => ipcRenderer.invoke('set-always-on-top', flag),
+  getGlobalShortcut: (): Promise<string> => ipcRenderer.invoke('get-global-shortcut'),
+  setGlobalShortcut: (key: string): Promise<ApiResult> => ipcRenderer.invoke('set-global-shortcut', key)
 };
 
 contextBridge.exposeInMainWorld('electron', electronAPI);

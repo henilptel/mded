@@ -3,10 +3,32 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as fsSync from 'fs';
 import * as os from 'os';
+import * as crypto from 'crypto';
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
+
+/**
+ * Validates that a file or folder name is safe and does not contain path traversal characters.
+ * Also ensures the resolved path is within the intended base directory.
+ */
+function validatePath(baseDir: string, relativePath: string): string {
+  // 1. Basic check for traversal attempts in the relative path string
+  if (relativePath.includes('..') || relativePath.includes('/') || relativePath.includes('\\')) {
+    throw new Error('Invalid path: Path traversal detected');
+  }
+
+  // 2. Resolve the full path
+  const resolvedPath = path.join(baseDir, relativePath);
+
+  // 3. Verify the resolved path starts with the base directory
+  if (!resolvedPath.startsWith(baseDir)) {
+    throw new Error('Invalid path: Path is outside of base directory');
+  }
+
+  return resolvedPath;
+}
 
 const NOTES_DIR = path.join(os.homedir(), '.mded', 'notes');
 
@@ -14,6 +36,33 @@ const NOTES_DIR = path.join(os.homedir(), '.mded', 'notes');
 if (!fsSync.existsSync(NOTES_DIR)) {
   fsSync.mkdirSync(NOTES_DIR, { recursive: true });
 }
+
+const CONFIG_FILE = path.join(os.homedir(), '.mded', 'config.json');
+let globalShortcutKey = 'CommandOrControl+Shift+N';
+
+function loadConfig() {
+  try {
+    if (fsSync.existsSync(CONFIG_FILE)) {
+      const data = fsSync.readFileSync(CONFIG_FILE, 'utf-8');
+      const config = JSON.parse(data);
+      if (config.globalShortcut) {
+        globalShortcutKey = config.globalShortcut;
+      }
+    }
+  } catch (error) {
+    console.error('Error loading config:', error);
+  }
+}
+
+function saveConfig(config: any) {
+  try {
+    fsSync.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
+  } catch (error) {
+    console.error('Error saving config:', error);
+  }
+}
+
+loadConfig();
 
 interface NoteInfo {
   id: string;
@@ -91,16 +140,31 @@ if (!gotTheLock) {
     createTray();
     
     // Global hotkey to show/focus window (Ctrl+Shift+N)
-    globalShortcut.register('CommandOrControl+Shift+N', () => {
-      if (mainWindow) {
-        if (!mainWindow.isVisible()) {
-          mainWindow.show();
-        }
-        mainWindow.focus();
-      }
-    });
+    // Register global shortcut
+    registerGlobalShortcut(globalShortcutKey);
   });
 }
+
+function registerGlobalShortcut(key: string): boolean {
+  try {
+    globalShortcut.unregisterAll();
+    const ret = globalShortcut.register(key, () => {
+      if (mainWindow) {
+        if (mainWindow.isVisible()) {
+          mainWindow.hide();
+        } else {
+          mainWindow.show();
+          mainWindow.focus();
+        }
+      }
+    });
+    return ret;
+  } catch (error) {
+    console.error('Failed to register shortcut:', error);
+    return false;
+  }
+}
+
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
@@ -146,7 +210,7 @@ ipcMain.handle('list-folders', async () => {
 
 ipcMain.handle('create-folder', async (_event, folderName: string) => {
   try {
-    const folderPath = path.join(NOTES_DIR, folderName);
+    const folderPath = validatePath(NOTES_DIR, folderName);
     await fs.mkdir(folderPath, { recursive: true });
     return { success: true };
   } catch (error) {
@@ -158,11 +222,11 @@ ipcMain.handle('create-folder', async (_event, folderName: string) => {
 ipcMain.handle('move-note-to-folder', async (_event, noteId: string, currentFolder: string, targetFolder: string) => {
   try {
     const currentPath = currentFolder 
-      ? path.join(NOTES_DIR, currentFolder, noteId)
-      : path.join(NOTES_DIR, noteId);
+      ? validatePath(path.join(NOTES_DIR, currentFolder), noteId)
+      : validatePath(NOTES_DIR, noteId);
     const targetPath = targetFolder
-      ? path.join(NOTES_DIR, targetFolder, noteId)
-      : path.join(NOTES_DIR, noteId);
+      ? validatePath(path.join(NOTES_DIR, targetFolder), noteId)
+      : validatePath(NOTES_DIR, noteId);
     
     await fs.rename(currentPath, targetPath);
     return { success: true };
@@ -181,8 +245,31 @@ async function getNotesFromDir(dir: string, folder: string = ''): Promise<NoteIn
   const notes = await Promise.all(mdFiles.map(async (file) => {
     const filePath = path.join(dir, file);
     const stats = await fs.stat(filePath);
-    const content = await fs.readFile(filePath, 'utf-8');
-    const title = content.split('\n')[0].replace(/^#\s*/, '') || file.replace('.md', '');
+    
+    // Read only the first 256 bytes to extract the title
+    let title = file.replace('.md', '');
+    let fileHandle = null;
+    try {
+      fileHandle = await fs.open(filePath, 'r');
+      // Create a buffer for reading
+      const buffer = Buffer.alloc(256);
+      const { bytesRead } = await fileHandle.read(buffer, 0, 256, 0);
+      
+      if (bytesRead > 0) {
+        const content = buffer.toString('utf-8', 0, bytesRead);
+        const firstLine = content.split('\n')[0].trim();
+        if (firstLine) {
+            title = firstLine.replace(/^#\s*/, '');
+        }
+      }
+    } catch (err) {
+      console.error(`Error reading title for ${file}:`, err);
+    } finally {
+      if (fileHandle) {
+        await fileHandle.close();
+      }
+    }
+
     return {
       id: file,
       title,
@@ -200,7 +287,7 @@ ipcMain.handle('list-notes', async (_event, folder?: string) => {
     
     if (folder) {
       // List notes from specific folder
-      const folderPath = path.join(NOTES_DIR, folder);
+      const folderPath = validatePath(NOTES_DIR, folder);
       if (fsSync.existsSync(folderPath)) {
         notes = await getNotesFromDir(folderPath, folder);
       }
@@ -228,8 +315,8 @@ ipcMain.handle('list-notes', async (_event, folder?: string) => {
 ipcMain.handle('read-note', async (_event, noteId: string, folder?: string) => {
   try {
     const filePath = folder 
-      ? path.join(NOTES_DIR, folder, noteId)
-      : path.join(NOTES_DIR, noteId);
+      ? validatePath(path.join(NOTES_DIR, folder), noteId)
+      : validatePath(NOTES_DIR, noteId);
     const content = await fs.readFile(filePath, 'utf-8');
     return { success: true, content };
   } catch (error) {
@@ -241,8 +328,8 @@ ipcMain.handle('read-note', async (_event, noteId: string, folder?: string) => {
 ipcMain.handle('save-note', async (_event, noteId: string, content: string, folder?: string) => {
   try {
     const filePath = folder 
-      ? path.join(NOTES_DIR, folder, noteId)
-      : path.join(NOTES_DIR, noteId);
+      ? validatePath(path.join(NOTES_DIR, folder), noteId)
+      : validatePath(NOTES_DIR, noteId);
     await fs.writeFile(filePath, content, 'utf-8');
     return { success: true };
   } catch (error) {
@@ -253,11 +340,10 @@ ipcMain.handle('save-note', async (_event, noteId: string, content: string, fold
 
 ipcMain.handle('create-note', async (_event, folder?: string) => {
   try {
-    const timestamp = Date.now();
-    const noteId = `note-${timestamp}.md`;
+    const noteId = `note-${crypto.randomUUID()}.md`;
     const filePath = folder 
-      ? path.join(NOTES_DIR, folder, noteId)
-      : path.join(NOTES_DIR, noteId);
+      ? validatePath(path.join(NOTES_DIR, folder), noteId)
+      : validatePath(NOTES_DIR, noteId);
     
     // Ensure folder exists
     if (folder) {
@@ -275,8 +361,8 @@ ipcMain.handle('create-note', async (_event, folder?: string) => {
 ipcMain.handle('delete-note', async (_event, noteId: string, folder?: string) => {
   try {
     const filePath = folder 
-      ? path.join(NOTES_DIR, folder, noteId)
-      : path.join(NOTES_DIR, noteId);
+      ? validatePath(path.join(NOTES_DIR, folder), noteId)
+      : validatePath(NOTES_DIR, noteId);
     await fs.unlink(filePath);
     return { success: true };
   } catch (error) {
@@ -333,4 +419,20 @@ ipcMain.on('close-window', () => {
 ipcMain.handle('set-always-on-top', async (_event, flag: boolean) => {
   mainWindow?.setAlwaysOnTop(flag);
   return { success: true };
+});
+
+ipcMain.handle('get-global-shortcut', () => {
+  return globalShortcutKey;
+});
+
+ipcMain.handle('set-global-shortcut', (_event, key: string) => {
+  if (registerGlobalShortcut(key)) {
+    globalShortcutKey = key;
+    saveConfig({ globalShortcut: key });
+    return { success: true };
+  } else {
+    // Revert to old shortcut if failed
+    registerGlobalShortcut(globalShortcutKey);
+    return { success: false, error: 'Failed to register shortcut' };
+  }
 });
