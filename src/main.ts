@@ -38,28 +38,37 @@ if (!fsSync.existsSync(NOTES_DIR)) {
 }
 
 const CONFIG_FILE = path.join(os.homedir(), '.mded', 'config.json');
-let globalShortcutKey = 'CommandOrControl+Shift+N';
+let config: any = {
+  globalShortcut: 'CommandOrControl+Shift+N',
+  windowBounds: { width: 1200, height: 800 }
+};
 
 function loadConfig() {
   try {
     if (fsSync.existsSync(CONFIG_FILE)) {
       const data = fsSync.readFileSync(CONFIG_FILE, 'utf-8');
-      const config = JSON.parse(data);
-      if (config.globalShortcut) {
-        globalShortcutKey = config.globalShortcut;
-      }
+      const loaded = JSON.parse(data);
+      config = { ...config, ...loaded };
     }
   } catch (error) {
     console.error('Error loading config:', error);
   }
 }
 
-function saveConfig(config: any) {
+function saveConfig() {
   try {
     fsSync.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
   } catch (error) {
     console.error('Error saving config:', error);
   }
+}
+
+let saveTimer: NodeJS.Timeout | null = null;
+function scheduleSaveConfig() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    saveConfig();
+  }, 1000);
 }
 
 loadConfig();
@@ -77,9 +86,13 @@ interface FolderInfo {
 }
 
 function createWindow(): void {
+  const { width, height, x, y } = config.windowBounds || { width: 1200, height: 800 };
+
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width,
+    height,
+    x,
+    y,
     icon: path.join(__dirname, '../build/icon.png'),
     frame: false,
     transparent: true,
@@ -89,6 +102,20 @@ function createWindow(): void {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js')
     }
+  });
+
+  mainWindow.on('resize', () => {
+    if (!mainWindow) return;
+    const { width, height } = mainWindow.getBounds();
+    config.windowBounds = { ...config.windowBounds, width, height };
+    scheduleSaveConfig();
+  });
+
+  mainWindow.on('move', () => {
+    if (!mainWindow) return;
+    const { x, y } = mainWindow.getBounds();
+    config.windowBounds = { ...config.windowBounds, x, y };
+    scheduleSaveConfig();
   });
 
   mainWindow.loadFile(path.join(__dirname, '../index.html'));
@@ -141,7 +168,7 @@ if (!gotTheLock) {
     
     // Global hotkey to show/focus window (Ctrl+Shift+N)
     // Register global shortcut
-    registerGlobalShortcut(globalShortcutKey);
+    registerGlobalShortcut(config.globalShortcut);
   });
 }
 
@@ -448,17 +475,17 @@ ipcMain.handle('set-always-on-top', async (_event, flag: boolean) => {
 });
 
 ipcMain.handle('get-global-shortcut', () => {
-  return globalShortcutKey;
+  return config.globalShortcut;
 });
 
 ipcMain.handle('set-global-shortcut', (_event, key: string) => {
   if (registerGlobalShortcut(key)) {
-    globalShortcutKey = key;
-    saveConfig({ globalShortcut: key });
+    config.globalShortcut = key;
+    scheduleSaveConfig();
     return { success: true };
   } else {
     // Revert to old shortcut if failed
-    registerGlobalShortcut(globalShortcutKey);
+    registerGlobalShortcut(config.globalShortcut);
     return { success: false, error: 'Failed to register shortcut' };
   }
 });
