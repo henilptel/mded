@@ -4,8 +4,37 @@
   box-sizing: border-box;
 }
 
+/* Global scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.12) 100%);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.2) 100%);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, sans-serif;
   overflow: hidden;
   background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #0a0a0a 100%);
   color: #fff;
@@ -180,20 +209,24 @@ body {
 }
 
 .notes-list::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .notes-list::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
 }
 
 .notes-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 .notes-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.25);
+  background-clip: padding-box;
 }
 
 .note-item {
@@ -296,7 +329,7 @@ body {
   font-size: 15px;
   line-height: 1.7;
   outline: none;
-  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  font-family: "SF Mono", "Consolas", "Monaco", monospace;
 }
 
 .editor {
@@ -306,7 +339,8 @@ body {
 .preview {
   display: none;
   overflow-y: auto;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, sans-serif;
 }
 
 .preview::-webkit-scrollbar {
@@ -365,7 +399,7 @@ body {
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 0.9em;
-  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  font-family: "SF Mono", "Consolas", "Monaco", monospace;
   color: rgba(255, 255, 255, 0.9);
 }
 
@@ -472,4 +506,305 @@ body {
 .app.minimal-mode .main-content {
   padding: 0;
   gap: 0;
+}
+
+/* ============ Sidebar Sections ============ */
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+
+.sidebar-section.flex-1 {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ============ Folders ============ */
+.folders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.folder-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.2s ease;
+  font-size: 13px;
+}
+
+.folder-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.folder-item.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.folder-item.drag-over {
+  background: rgba(96, 165, 250, 0.2);
+  border: 1px dashed rgba(96, 165, 250, 0.5);
+}
+
+/* ============ Search ============ */
+.search-container {
+  margin-bottom: 12px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 13px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* ============ Note Items ============ */
+.note-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 12px 12px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.note-drag-handle {
+  color: rgba(255, 255, 255, 0.2);
+  cursor: grab;
+  font-size: 10px;
+  line-height: 1;
+  padding: 4px 0;
+  user-select: none;
+}
+
+.note-drag-handle:hover {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.note-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.note-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.note-folder {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+  border-radius: 4px;
+}
+
+.note-item.dragging {
+  opacity: 0.5;
+}
+
+.note-item.drag-over {
+  border-color: rgba(96, 165, 250, 0.5);
+  background: rgba(96, 165, 250, 0.1);
+}
+
+.empty-state {
+  padding: 16px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+}
+
+/* ============ Toolbar Enhancements ============ */
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 8px;
+}
+
+.btn-toggle.active {
+  background: rgba(96, 165, 250, 0.2);
+  color: #60a5fa;
+}
+
+/* ============ Vim Mode ============ */
+.editor.vim-command-mode {
+  caret-color: transparent;
+  background: rgba(255, 200, 100, 0.05);
+}
+
+.editor.vim-command-mode::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 1.5em;
+  background: rgba(255, 200, 100, 0.8);
+}
+
+/* ============ Modal ============ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.modal-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal {
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  transform: scale(0.95) translateY(10px);
+  transition: transform 0.3s ease;
+}
+
+.modal-overlay.show .modal {
+  transform: scale(1) translateY(0);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.modal-body {
+  padding: 20px 24px;
+}
+
+.shortcut-section {
+  margin-bottom: 20px;
+}
+
+.shortcut-section:last-child {
+  margin-bottom: 0;
+}
+
+.shortcut-section h3 {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 12px;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+}
+
+.shortcut-row span {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+kbd {
+  display: inline-block;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-family: "SF Mono", "Consolas", monospace;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ============ Toast Notifications ============ */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 2000;
+  pointer-events: none;
+}
+
+.toast {
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  background: rgba(30, 30, 30, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  transform: translateX(100%);
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: auto;
+}
+
+.toast.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.toast-success {
+  border-left: 3px solid #22c55e;
+}
+
+.toast-error {
+  border-left: 3px solid #ef4444;
+}
+
+.toast-info {
+  border-left: 3px solid #60a5fa;
 }
