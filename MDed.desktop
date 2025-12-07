@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=MDed
+Comment=Minimalistic Markdown Editor
+Exec=/home/real/projects/mded/run.sh
+Icon=/home/real/projects/mded/build/icon.png
+Terminal=false
+Categories=Utility;TextEditor;
+StartupWMClass=mded
