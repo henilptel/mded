@@ -33,11 +33,11 @@
 
 ## 🟢 P3: Navigation & Organization
 
-- [ ] Jump to Note by Name - Ctrl+P command palette to fuzzy-search and open notes
-- [ ] Arrow Key Note Navigation - Up/Down arrows in sidebar to navigate notes, Enter to open
-- [ ] Ctrl+Tab / Ctrl+Shift+Tab - Cycle through recent notes (like browser tabs)
-- [ ] Pinned Notes - Pin important notes to the top of the list
-- [ ] Sort Options - Sort notes by: Name, Modified Date, Created Date (ascending/descending)
+- [x] Jump to Note by Name - Ctrl+P command palette to fuzzy-search and open notes
+- [x] Arrow Key Note Navigation - Up/Down arrows in sidebar to navigate notes, Enter to open
+- [x] Ctrl+Tab / Ctrl+Shift+Tab - Cycle through recent notes (like browser tabs)
+- [x] Pinned Notes - Pin important notes to the top of the list
+- [x] Sort Options - Sort notes by: Name, Modified Date, Created Date (ascending/descending)
 
 ---
 
