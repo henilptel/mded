@@ -48,7 +48,12 @@ const electronAPI = {
   closeWindow: (): void => ipcRenderer.send('close-window'),
   setAlwaysOnTop: (flag: boolean): Promise<ApiResult> => ipcRenderer.invoke('set-always-on-top', flag),
   getGlobalShortcut: (): Promise<string> => ipcRenderer.invoke('get-global-shortcut'),
-  setGlobalShortcut: (key: string): Promise<ApiResult> => ipcRenderer.invoke('set-global-shortcut', key)
+  setGlobalShortcut: (key: string): Promise<ApiResult> => ipcRenderer.invoke('set-global-shortcut', key),
+  
+  // Persistence
+  getLastNote: (): Promise<{ noteId: string | null, folder: string | null }> => ipcRenderer.invoke('get-last-note'),
+  saveLastNote: (noteId: string, folder: string): Promise<ApiResult> => ipcRenderer.invoke('save-last-note', noteId, folder),
+  saveQuickNote: (content: string): Promise<ApiResult> => ipcRenderer.invoke('save-quick-note', content)
 };
 
 contextBridge.exposeInMainWorld('electron', electronAPI);

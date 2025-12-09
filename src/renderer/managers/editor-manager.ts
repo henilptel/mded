@@ -91,6 +91,59 @@ export class EditorManager {
     this.onInput?.();
   }
 
+
+  duplicateLine() {
+    const start = this.editor.selectionStart;
+    const lineStart = this.editor.value.lastIndexOf('\n', start - 1) + 1;
+    const lineEnd = this.editor.value.indexOf('\n', start);
+    const end = lineEnd === -1 ? this.editor.value.length : lineEnd;
+    
+    // Get current line content
+    const line = this.editor.value.substring(lineStart, end);
+    
+    // We want to insert a newline + the line content after the current line
+    // If we are at the very end of file, we might need a preliminary newline if one doesn't exist
+    const insertContent = '\n' + line;
+    
+    this.editor.value = this.editor.value.substring(0, end) + insertContent + this.editor.value.substring(end);
+    
+    // Move cursor to the new line, same column if possible
+    const column = start - lineStart;
+    const newStart = end + 1 + column;
+    
+    this.editor.selectionStart = newStart;
+    this.editor.selectionEnd = newStart;
+    
+    this.editor.focus();
+    this.updatePreview();
+    this.onInput?.();
+  }
+
+  deleteCurrentLine() {
+    const start = this.editor.selectionStart;
+    const lineStart = this.editor.value.lastIndexOf('\n', start - 1) + 1;
+    let lineEnd = this.editor.value.indexOf('\n', start);
+    
+    // If last line (no newline found), set to length
+    if (lineEnd === -1) {
+        lineEnd = this.editor.value.length;
+    } else {
+        // If not last line, include the newline character in deletion so the line actually disappears
+        lineEnd += 1;
+    }
+    
+    // Deleting everything from lineStart to lineEnd
+    this.editor.value = this.editor.value.substring(0, lineStart) + this.editor.value.substring(lineEnd);
+    
+    // Move cursor to lineStart (which is now the start of the *next* line, or same position)
+    this.editor.selectionStart = lineStart;
+    this.editor.selectionEnd = lineStart;
+    
+    this.editor.focus();
+    this.updatePreview();
+    this.onInput?.();
+  }
+
   private initEvents() {
     this.editor.addEventListener('input', () => {
       this.updatePreview();

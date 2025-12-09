@@ -183,6 +183,22 @@ document.getElementById('new-note-btn')?.addEventListener('click', async () => {
     }
 });
 
+document.getElementById('copy-note-btn')?.addEventListener('click', async () => {
+    const content = editorManager.getContent();
+    if (!content) {
+        ui.showToast('Note is empty', 'error');
+        return;
+    }
+    
+    try {
+        await navigator.clipboard.writeText(content);
+        ui.showToast('Note copied to clipboard', 'success');
+    } catch (err) {
+        console.error('Failed to copy:', err);
+        ui.showToast('Failed to copy to clipboard', 'error');
+    }
+});
+
 // Window Controls
 document.getElementById('minimize-btn')?.addEventListener('click', () => window.electron.minimizeWindow());
 document.getElementById('maximize-btn')?.addEventListener('click', () => window.electron.maximizeWindow());
@@ -258,6 +274,16 @@ shortcutManager.registerCtrl('k', (e) => {
     editorManager.insertMarkdown('[', '](url)');
 });
 
+shortcutManager.registerCtrl('d', (e) => {
+    e.preventDefault();
+    editorManager.duplicateLine();
+});
+
+shortcutManager.register('shift+delete', (e) => {
+    e.preventDefault();
+    editorManager.deleteCurrentLine();
+});
+
 // Shortcuts Modal
 const shortcutsModal = document.getElementById('shortcuts-modal');
 const shortcutsBtn = document.getElementById('shortcuts-btn');
@@ -321,6 +347,18 @@ async function init() {
     const key = await window.electron.getGlobalShortcut();
     const display = document.getElementById('shortcut-display');
     if (display) display.textContent = key;
+
+    // Restore last note
+    const lastState = await window.electron.getLastNote();
+    if (lastState.noteId) {
+        // Ensure folder is loaded/valid context
+        if (lastState.folder) {
+            noteManager.setCurrentFolder(lastState.folder);
+            await refreshFolders(); // Update UI selection
+            await refreshNotes();   // Update list for that folder
+        }
+        await loadNote(lastState.noteId, lastState.folder || '');
+    }
 }
 
 init();

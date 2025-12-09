@@ -23,6 +23,9 @@ export class NoteManager {
   setCurrentNote(id: string | null, folder: string = '') {
     this.currentNoteId = id;
     this.activeNoteFolder = folder;
+    if (id) {
+        window.electron.saveLastNote(id, folder);
+    }
   }
 
   async loadFolders(): Promise<FolderInfo[]> {

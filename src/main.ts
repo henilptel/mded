@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, globalShortcut } from 'electron';
+import { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, globalShortcut, clipboard, Notification } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as fsSync from 'fs';
@@ -6,6 +6,7 @@ import * as os from 'os';
 import * as crypto from 'crypto';
 
 let mainWindow: BrowserWindow | null = null;
+let quickNoteWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
 
@@ -40,7 +41,11 @@ if (!fsSync.existsSync(NOTES_DIR)) {
 const CONFIG_FILE = path.join(os.homedir(), '.mded', 'config.json');
 let config: any = {
   globalShortcut: 'CommandOrControl+Shift+N',
-  windowBounds: { width: 1200, height: 800 }
+  clipboardShortcut: 'CommandOrControl+Alt+V',
+  quickNoteShortcut: 'CommandOrControl+Alt+N',
+  windowBounds: { width: 1200, height: 800 },
+  lastNoteId: null as string | null,
+  lastFolder: null as string | null
 };
 
 function loadConfig() {
@@ -171,6 +176,8 @@ if (!gotTheLock) {
     // Global hotkey to show/focus window (Ctrl+Shift+N)
     // Register global shortcut
     registerGlobalShortcut(config.globalShortcut);
+    registerClipboardShortcut(config.clipboardShortcut);
+    registerQuickNoteShortcut(config.quickNoteShortcut);
   });
 }
 
@@ -192,6 +199,84 @@ function registerGlobalShortcut(key: string): boolean {
     console.error('Failed to register shortcut:', error);
     return false;
   }
+}
+
+function registerClipboardShortcut(key: string): boolean {
+  try {
+    return globalShortcut.register(key, async () => {
+      const content = clipboard.readText();
+      if (!content.trim()) {
+        new Notification({ title: 'MDed', body: 'Clipboard is empty' }).show();
+        return;
+      }
+
+      const noteId = `clipboard-${Date.now()}.md`;
+      const filePath = path.join(NOTES_DIR, noteId);
+      
+      try {
+        await fs.writeFile(filePath, content, 'utf-8');
+        new Notification({ title: 'MDed', body: 'Note saved from clipboard!' }).show();
+        
+        // If window is open, refresh (could send IPC, but for now relies on manual or auto refresh)
+        if (mainWindow && mainWindow.isVisible()) {
+           // Optional: mainWindow.webContents.send('note-externally-created');
+        }
+      } catch (err) {
+        console.error('Failed to save clipboard note:', err);
+        new Notification({ title: 'MDed', body: 'Failed to save note' }).show();
+      }
+    });
+  } catch (error) {
+    console.error('Failed to register clipboard shortcut:', error);
+    return false;
+  }
+}
+
+function createQuickNoteWindow(): void {
+  if (quickNoteWindow) {
+    if (quickNoteWindow.isVisible()) {
+      quickNoteWindow.hide();
+    } else {
+      quickNoteWindow.show();
+      quickNoteWindow.focus();
+    }
+    return;
+  }
+
+  quickNoteWindow = new BrowserWindow({
+    width: 500,
+    height: 300,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+
+  quickNoteWindow.loadFile(path.join(__dirname, '../quick-note.html'));
+
+  quickNoteWindow.on('blur', () => {
+    quickNoteWindow?.hide();
+  });
+  
+  quickNoteWindow.on('close', (e) => {
+      // Don't simplify destroy, just hide
+      if (!isQuitting) {
+          e.preventDefault();
+          quickNoteWindow?.hide();
+      }
+  });
+}
+
+function registerQuickNoteShortcut(key: string) {
+    globalShortcut.register(key, () => {
+        createQuickNoteWindow();
+    });
 }
 
 
@@ -485,9 +570,41 @@ ipcMain.handle('set-global-shortcut', (_event, key: string) => {
     config.globalShortcut = key;
     scheduleSaveConfig();
     return { success: true };
-  } else {
-    // Revert to old shortcut if failed
-    registerGlobalShortcut(config.globalShortcut);
-    return { success: false, error: 'Failed to register shortcut' };
+  }
+});
+
+// ============ Persistence ============
+
+ipcMain.handle('get-last-note', () => {
+  return {
+    noteId: config.lastNoteId,
+    folder: config.lastFolder
+  };
+});
+
+ipcMain.handle('save-last-note', (_event, noteId: string, folder: string) => {
+  config.lastNoteId = noteId;
+  config.lastFolder = folder;
+  scheduleSaveConfig();
+  return { success: true };
+});
+ipcMain.handle('save-quick-note', async (_event, content: string) => {
+  try {
+      if (!content.trim()) return { success: false, error: 'Empty content' };
+      
+      const noteId = `quick-${Date.now()}.md`;
+      const filePath = path.join(NOTES_DIR, noteId);
+      await fs.writeFile(filePath, content, 'utf-8');
+      
+      new Notification({ title: 'MDed', body: 'Quick note saved' }).show();
+      quickNoteWindow?.hide();
+      
+      if (mainWindow && mainWindow.isVisible()) {
+          // Optional refresh logic
+      }
+      return { success: true };
+  } catch (error) {
+      console.error('Error saving quick note:', error);
+      return { success: false, error: String(error) };
   }
 });
