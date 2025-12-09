@@ -30,6 +30,7 @@
           </button>
           <span class="app-title">MDed</span>
           <span id="save-indicator" class="save-indicator">Saved</span>
+          <span id="stats-indicator" class="save-indicator" style="margin-left: 10px; opacity: 1;"></span>
         </div>
         <div class="window-controls">
           <button
@@ -170,6 +171,19 @@
                 placeholder="Search notes..."
                 class="search-input"
               />
+              <div class="sort-wrapper">
+                  <button id="sort-trigger-btn" class="sort-trigger-btn" title="Sort Notes">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                  </button>
+                  <div id="sort-menu" class="dropdown-menu glass">
+                     <div class="dropdown-item active" data-value="modified-desc">Date Modified (Newest)</div>
+                     <div class="dropdown-item" data-value="modified-asc">Date Modified (Oldest)</div>
+                     <div class="dropdown-item" data-value="created-desc">Date Created (Newest)</div>
+                     <div class="dropdown-item" data-value="created-asc">Date Created (Oldest)</div>
+                     <div class="dropdown-item" data-value="title-asc">Name (A-Z)</div>
+                     <div class="dropdown-item" data-value="title-desc">Name (Z-A)</div>
+                  </div>
+              </div>
             </div>
             <div class="notes-list" id="notes-list"></div>
           </div>
@@ -617,6 +631,33 @@
             >
               Delete
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Command Palette Modal -->
+    <div class="modal-overlay" id="command-palette-modal">
+      <div class="modal glass" style="max-width: 600px;">
+        <div class="modal-header">
+           <h2>Jump to Note</h2>
+           <button class="btn-icon-sm" id="command-palette-close">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+           </button>
+        </div>
+        <div class="modal-body" style="padding-top: 0;">
+          <input
+            type="text"
+            id="command-palette-input"
+            placeholder="Type to search..."
+            class="search-input"
+            style="margin-bottom: 12px; font-size: 16px; padding: 12px;"
+          />
+          <div id="command-palette-results" class="notes-list" style="max-height: 300px; overflow-y: auto;">
+             <!-- Results injected here -->
           </div>
         </div>
       </div>

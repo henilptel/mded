@@ -2,7 +2,9 @@ export interface NoteInfo {
   id: string;
   title: string;
   modified: Date;
+  created: Date;
   folder: string;
+  pinned?: boolean;
 }
 
 export interface FolderInfo {

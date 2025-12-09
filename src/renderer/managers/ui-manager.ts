@@ -6,6 +6,8 @@ export class UIManager {
     editor: document.getElementById('editor') as HTMLTextAreaElement,
     preview: document.getElementById('preview') as HTMLDivElement,
     searchInput: document.getElementById('search-input') as HTMLInputElement,
+    sortTrigger: document.getElementById('sort-trigger-btn') as HTMLButtonElement,
+    sortMenu: document.getElementById('sort-menu') as HTMLDivElement,
     saveIndicator: document.getElementById('save-indicator') as HTMLSpanElement,
     modeLabel: document.getElementById('mode-label') as HTMLSpanElement,
     toastContainer: document.getElementById('toast-container') as HTMLDivElement,
@@ -32,6 +34,12 @@ export class UIManager {
     confirmOk: document.getElementById('confirm-ok') as HTMLButtonElement,
     confirmCancel: document.getElementById('confirm-cancel') as HTMLButtonElement,
     confirmClose: document.getElementById('confirm-close') as HTMLButtonElement,
+
+    // Command Palette
+    commandPaletteModal: document.getElementById('command-palette-modal') as HTMLDivElement,
+    commandPaletteInput: document.getElementById('command-palette-input') as HTMLInputElement,
+    commandPaletteResults: document.getElementById('command-palette-results') as HTMLDivElement,
+    commandPaletteClose: document.getElementById('command-palette-close') as HTMLButtonElement,
   };
 
   constructor() {}
@@ -192,7 +200,8 @@ export class UIManager {
       onRename: (id: string, folder: string) => void,
       onDelete: (id: string, folder: string) => void,
       onDragStart: (id: string, folder: string) => void,
-      onDrop: (targetId: string, targetFolder: string) => void
+      onDrop: (targetId: string, targetFolder: string) => void,
+      onPin: (id: string, folder: string) => void
   }) {
     this.elements.notesList.innerHTML = '';
 
@@ -204,6 +213,7 @@ export class UIManager {
     notes.forEach(note => {
       const noteItem = document.createElement('div');
       noteItem.className = 'note-item';
+      if (note.pinned) noteItem.classList.add('pinned');
       noteItem.dataset.noteId = note.id;
       noteItem.dataset.folder = note.folder;
       noteItem.draggable = true;
@@ -224,9 +234,12 @@ export class UIManager {
           const re = new RegExp(`(${state.searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
           titleHtml = titleHtml.replace(re, '<span class="search-highlight">$1</span>');
       }
+      
+      // Pin Icon if pinned
+      const pinIcon = note.pinned ? `<span class="pin-indicator"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M16 4v12l-4 4-4-4V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2z"></path></svg></span>` : '';
 
       content.innerHTML = `
-          <h3>${titleHtml}</h3>
+          <h3>${titleHtml} ${pinIcon}</h3>
           <div class="note-meta">
             <span class="note-date">${dateStr}</span>
             ${note.folder ? `<span class="note-folder">${note.folder}</span>` : ''}
@@ -241,6 +254,13 @@ export class UIManager {
       actions.style.marginLeft = 'auto';
       actions.style.opacity = '0.5';
 
+      // Pin Button
+      const pinBtn = document.createElement('button');
+      pinBtn.className = 'btn-icon-sm' + (note.pinned ? ' active' : '');
+      pinBtn.title = note.pinned ? 'Unpin' : 'Pin';
+      pinBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4v12l-4 4-4-4V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2z"></path></svg>';
+      pinBtn.addEventListener('click', (e) => { e.stopPropagation(); callbacks.onPin(note.id, note.folder); });
+      
       const renameBtn = document.createElement('button');
       renameBtn.className = 'btn-icon-sm';
       renameBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
@@ -251,6 +271,7 @@ export class UIManager {
       deleteBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
       deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); callbacks.onDelete(note.id, note.folder); });
 
+      actions.appendChild(pinBtn);
       actions.appendChild(renameBtn);
       actions.appendChild(deleteBtn);
 

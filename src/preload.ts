@@ -4,7 +4,9 @@ export interface NoteInfo {
   id: string;
   title: string;
   modified: Date;
+  created: Date;
   folder: string;
+  pinned?: boolean;
 }
 
 export interface FolderInfo {
@@ -39,6 +41,7 @@ const electronAPI = {
   deleteNote: (noteId: string, folder?: string): Promise<ApiResult> => ipcRenderer.invoke('delete-note', noteId, folder),
   
   // Note order
+  togglePinNote: (noteId: string): Promise<ApiResult> => ipcRenderer.invoke('toggle-pin-note', noteId),
   getNoteOrder: (): Promise<Record<string, string[]>> => ipcRenderer.invoke('get-note-order'),
   saveNoteOrder: (order: Record<string, string[]>): Promise<ApiResult> => ipcRenderer.invoke('save-note-order', order),
   

@@ -45,7 +45,8 @@ let config: any = {
   quickNoteShortcut: 'CommandOrControl+Alt+N',
   windowBounds: { width: 1200, height: 800 },
   lastNoteId: null as string | null,
-  lastFolder: null as string | null
+  lastFolder: null as string | null,
+  pinnedNotes: [] as string[]
 };
 
 function loadConfig() {
@@ -82,7 +83,9 @@ interface NoteInfo {
   id: string;
   title: string;
   modified: Date;
+  created: Date;
   folder: string;
+  pinned?: boolean;
 }
 
 interface FolderInfo {
@@ -395,6 +398,13 @@ ipcMain.handle('rename-note', async (_event, noteId: string, newName: string, fo
       : validatePath(NOTES_DIR, newName);
 
     await fs.rename(oldPath, newPath);
+    
+    // Update pinned notes if needed
+    if (config.pinnedNotes.includes(noteId)) {
+        config.pinnedNotes = config.pinnedNotes.map((id: string) => id === noteId ? newName : id);
+        scheduleSaveConfig();
+    }
+    
     return { success: true, noteId: newName };
   } catch (error) {
     console.error('Error renaming note:', error);
@@ -431,8 +441,9 @@ async function getNotesFromDir(dir: string, folder: string = ''): Promise<NoteIn
       const stats = await fs.stat(filePath);
       return {
         id: file,
-        title: file.replace('.md', ''),
+        title: path.basename(file, '.md'),
         modified: stats.mtime,
+        created: stats.birthtime,
         folder
       };
     } catch (err) {
@@ -468,7 +479,13 @@ ipcMain.handle('list-notes', async (_event, folder?: string) => {
       }
     }
     
-    return notes.sort((a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime());
+    const sortedNotes = notes.sort((a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime());
+    
+    // enhance with pinned status
+    return sortedNotes.map(n => ({
+        ...n,
+        pinned: config.pinnedNotes.includes(n.id)
+    }));
   } catch (error) {
     console.error('Error listing notes:', error);
     return [];
@@ -527,11 +544,28 @@ ipcMain.handle('delete-note', async (_event, noteId: string, folder?: string) =>
       ? validatePath(path.join(NOTES_DIR, folder), noteId)
       : validatePath(NOTES_DIR, noteId);
     await fs.unlink(filePath);
+    
+    // Remove from pinned
+    if (config.pinnedNotes.includes(noteId)) {
+        config.pinnedNotes = config.pinnedNotes.filter((id: string) => id !== noteId);
+        scheduleSaveConfig();
+    }
+    
     return { success: true };
   } catch (error) {
     console.error('Error deleting note:', error);
     return { success: false, error: String(error) };
   }
+});
+
+ipcMain.handle('toggle-pin-note', (_event, noteId: string) => {
+    if (config.pinnedNotes.includes(noteId)) {
+        config.pinnedNotes = config.pinnedNotes.filter((id: string) => id !== noteId);
+    } else {
+        config.pinnedNotes.push(noteId);
+    }
+    scheduleSaveConfig();
+    return { success: true, pinned: config.pinnedNotes.includes(noteId) };
 });
 
 // ============ Note Order Management ============

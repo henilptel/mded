@@ -22,12 +22,12 @@
 
 ## 🟡 P2: Editor Improvements (Better Writing Experience)
 
-- [ ] Smart Lists - Enter continues list item; Enter twice exits list. Same with TODOs
-- [ ] Tab to Indent - Tab key inserts spaces or indents list items
-- [ ] Auto-Pair Brackets - When typing (, [, {, \*, `, auto-insert closing character
-- [ ] Font Size Controls - Zoom in/out (Ctrl++ / Ctrl+-) for the editor
-- [ ] Clickable Checkboxes in Preview - Click to toggle checkbox state from preview mode
-- [ ] Checkbox/Todo Statistics - Show "3/10 tasks completed" if note has checkboxes
+- [x] Smart Lists - Enter continues list item; Enter twice exits list. Same with TODOs
+- [x] Tab to Indent - Tab key inserts spaces or indents list items
+- [x] Auto-Pair Brackets - When typing (, [, {, \*, `, auto-insert closing character
+- [x] Font Size Controls - Zoom in/out (Ctrl++ / Ctrl+-) for the editor
+- [x] Clickable Checkboxes in Preview - Click to toggle checkbox state from preview mode
+- [x] Checkbox/Todo Statistics - Show "3/10 tasks completed" if note has checkboxes
 
 ---
 
