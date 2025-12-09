@@ -6,7 +6,7 @@ A modern, fast, and minimalistic Markdown editor for Linux capable of handling f
 
 - **VisionOS Design**: Premium dark glassmorphism UI with sophisticated blur effects, translucent layers, and subtle animations.
 - **Folder Management**: Organize your notes into folders and subdirectories seamlessly.
-- **Markdown Editing**: Full markdown support with live preview, syntax highlighting, and Vim mode.
+- **Markdown Editing**: Full markdown support with live preview and syntax highlighting.
 - **Global Shortcut**: customizable global hotkey (default: `CommandOrControl+Shift+N`) to toggle the editor visibility from anywhere in your OS.
 - **Window Persistence**: Remembers your window size and position across sessions.
 - **Collapsible Sidebar**: Maximize your writing space by toggling the sidebar.
@@ -65,7 +65,6 @@ The output will be in the `dist/` directory.
 - **Create Note**: Click the `+` button in the sidebar or use `Ctrl+N`.
 - **Create Folder**: Use the folder button to organize notes.
 - **Global Toggle**: Press `Ctrl+Shift+N` (configurable) to show/hide the app instantly.
-- **Vim Mode**: Toggle Vim keybindings in the toolbar for keyboard-centric editing.
 - **Minimal Mode**: Click the focus icon to float the window and hide UI elements.
 - **Storage**: Notes are stored in `~/.mded/notes/` as standard `.md` files.
 
@@ -76,4 +75,7 @@ The output will be in the `dist/` directory.
   - `Ctrl+N`: New Note
   - `Ctrl+E`: Toggle Preview
   - `Ctrl+Shift+N`: Global Show/Hide (Configurable via Settings)
-- **Editor**: Supports standard editing keys. Enable Vim mode for modal editing.
+- **Formatting**:
+  - `Ctrl+B`: Bold
+  - `Ctrl+I`: Italic
+  - `Ctrl+K`: Insert Link

@@ -93,6 +93,8 @@ function createWindow(): void {
     height,
     x,
     y,
+    minWidth: 300,
+    minHeight: 200,
     icon: path.join(__dirname, '../build/icon.png'),
     frame: false,
     transparent: true,

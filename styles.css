@@ -42,6 +42,11 @@
   --radius-md: 12px;
   --radius-sm: 8px;
   --radius-pill: 999px;
+  
+  /* Smooth Easing */
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out-smooth: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-smooth: cubic-bezier(0.4, 0, 1, 1);
 }
 
 /* ============ Reset ============ */
@@ -64,6 +69,7 @@
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
+  transition: background-color 0.2s var(--ease-smooth);
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -81,6 +87,9 @@ body {
   overflow: hidden;
   background: #0a0a0a;
   color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 .app {
@@ -98,6 +107,8 @@ body {
   border: var(--rim-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--rim-highlight), var(--shadow-floating);
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 /* ============ Titlebar ============ */
@@ -127,12 +138,22 @@ body {
   color: var(--text-secondary);
 }
 
+.save-indicator {
+  font-size: 11px;
+  color: var(--text-quaternary);
+  margin-left: 12px;
+  opacity: 0;
+  transition: opacity 0.3s var(--ease-smooth), color 0.2s var(--ease-smooth);
+  will-change: opacity;
+}
+
 /* ============ Window Controls ============ */
 .window-controls {
   display: flex;
   gap: 6px;
   -webkit-app-region: no-drag;
 }
+
 
 .window-btn {
   width: 30px;
@@ -145,7 +166,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: background-color 0.2s var(--ease-smooth), color 0.2s var(--ease-smooth);
 }
 
 .window-btn:hover {
@@ -174,7 +195,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: background-color 0.2s var(--ease-smooth), color 0.2s var(--ease-smooth);
   -webkit-app-region: no-drag;
 }
 
@@ -190,22 +211,28 @@ body {
   overflow: hidden;
   padding: 12px;
   gap: 12px;
+  min-width: 0;
 }
 
 /* ============ Sidebar ============ */
 .sidebar {
   width: 260px;
+  min-width: 200px;
+  max-width: 320px;
   display: flex;
   flex-direction: column;
   padding: 16px;
-  transition: all 0.25s ease;
+  flex-shrink: 0;
+  transition: width 0.3s var(--ease-smooth), padding 0.3s var(--ease-smooth), 
+              opacity 0.25s var(--ease-smooth), border-width 0.3s var(--ease-smooth);
+  will-change: width, opacity;
 }
 
 .sidebar.collapsed {
   width: 0;
   min-width: 0;
   padding: 0;
-  border: none;
+  border-width: 0;
   opacity: 0;
   overflow: hidden;
 }
@@ -246,7 +273,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: background-color 0.2s var(--ease-smooth), color 0.2s var(--ease-smooth);
 }
 
 .btn-icon:hover {
@@ -274,7 +301,7 @@ body {
   cursor: pointer;
   color: var(--text-tertiary);
   background: transparent;
-  transition: all 0.15s ease;
+  transition: background-color 0.2s var(--ease-smooth), color 0.2s var(--ease-smooth);
   font-size: 13px;
 }
 
@@ -307,7 +334,7 @@ body {
   color: var(--text-primary);
   font-size: 13px;
   outline: none;
-  transition: all 0.15s ease;
+  transition: border-color 0.2s var(--ease-smooth), background-color 0.2s var(--ease-smooth);
 }
 
 .search-input:focus {
@@ -347,7 +374,8 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.2s var(--ease-smooth), border-color 0.2s var(--ease-smooth), 
+              transform 0.2s var(--ease-smooth);
 }
 
 .note-item:hover {
@@ -427,6 +455,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 0;
 }
 
 /* ============ Editor Header ============ */
@@ -435,11 +464,24 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .toolbar {
   display: flex;
   gap: 2px;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.toolbar::-webkit-scrollbar {
+  display: none;
 }
 
 .toolbar-btn {
@@ -459,6 +501,7 @@ body {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 /* ============ Toggle Buttons ============ */
@@ -473,7 +516,7 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  transition: all 0.15s ease;
+  transition: background-color 0.2s var(--ease-smooth), color 0.2s var(--ease-smooth);
 }
 
 .btn-toggle:hover {
@@ -492,6 +535,8 @@ body {
   padding: 24px;
   overflow: hidden;
   position: relative;
+  min-width: 0;
+  min-height: 0;
 }
 
 .editor,
@@ -506,6 +551,8 @@ body {
   line-height: 1.7;
   outline: none;
   font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 .editor {
@@ -630,12 +677,6 @@ body {
   border-radius: var(--radius-md);
 }
 
-/* ============ Vim Mode ============ */
-.editor.vim-command-mode {
-  caret-color: transparent;
-  background: rgba(255, 200, 100, 0.02);
-}
-
 /* ============ Minimal Mode ============ */
 .app.minimal-mode .sidebar {
   display: none;
@@ -671,8 +712,9 @@ body {
   justify-content: center;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.2s ease;
+  transition: opacity 0.25s var(--ease-smooth), visibility 0.25s var(--ease-smooth);
   z-index: 1000;
+  will-change: opacity;
 }
 
 .modal-overlay.show {
@@ -685,12 +727,15 @@ body {
   max-width: 480px;
   max-height: 80vh;
   overflow-y: auto;
-  transform: scale(0.95) translateY(10px);
-  transition: transform 0.2s ease;
+  transform: translate3d(0, 10px, 0) scale(0.95);
+  transition: transform 0.3s var(--ease-out-smooth), opacity 0.3s var(--ease-out-smooth);
+  opacity: 0;
+  will-change: transform, opacity;
 }
 
 .modal-overlay.show .modal {
-  transform: scale(1) translateY(0);
+  transform: translate3d(0, 0, 0) scale(1);
+  opacity: 1;
 }
 
 .modal-header {
@@ -777,14 +822,15 @@ kbd {
   border: var(--rim-border);
   color: var(--text-secondary);
   box-shadow: var(--shadow-elevated);
-  transform: translateX(100%);
+  transform: translate3d(100%, 0, 0);
   opacity: 0;
-  transition: all 0.25s ease;
+  transition: transform 0.3s var(--ease-out-smooth), opacity 0.3s var(--ease-out-smooth);
   pointer-events: auto;
+  will-change: transform, opacity;
 }
 
 .toast.show {
-  transform: translateX(0);
+  transform: translate3d(0, 0, 0);
   opacity: 1;
 }
 
@@ -798,4 +844,296 @@ kbd {
 
 .toast-info {
   border-left: 3px solid var(--accent-blue);
+}
+
+/* ============ Responsive Design ============ */
+
+/* Small windows - reduce sidebar width */
+@media (max-width: 900px) {
+  .sidebar {
+    width: 220px;
+    min-width: 180px;
+    padding: 12px;
+  }
+  
+  .main-content {
+    padding: 8px;
+    gap: 8px;
+  }
+  
+  .editor-area {
+    padding: 16px;
+  }
+  
+  .editor-header {
+    padding: 8px 12px;
+  }
+  
+  .toolbar-btn {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+/* Very small windows - further reduce sidebar */
+@media (max-width: 700px) {
+  .sidebar {
+    width: 200px;
+    min-width: 160px;
+    padding: 10px;
+  }
+  
+  .sidebar-header h2 {
+    font-size: 13px;
+  }
+  
+  .note-item {
+    padding: 10px;
+  }
+  
+  .note-item h3 {
+    font-size: 12px;
+  }
+  
+  .editor-area {
+    padding: 12px;
+  }
+  
+  .editor,
+  .preview {
+    font-size: 14px;
+  }
+  
+  .editor-header {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  
+  .toolbar {
+    gap: 1px;
+    max-width: calc(100% - 120px);
+  }
+  
+  .toolbar-btn {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+  
+  .editor-actions {
+    gap: 6px;
+  }
+  
+  .btn-toggle {
+    padding: 5px 10px;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+}
+
+/* Medium-small windows - make toolbar more compact */
+@media (max-width: 550px) {
+  .editor-header {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+  
+  .toolbar {
+    max-width: calc(100% - 90px);
+  }
+  
+  .toolbar-btn {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .editor-actions {
+    gap: 4px;
+  }
+  
+  .btn-toggle {
+    padding: 4px 6px;
+    font-size: 9px;
+  }
+}
+
+/* Hide toolbar when window is small */
+@media (max-width: 500px) {
+  .editor-header {
+    display: none;
+  }
+  
+  .editor-container {
+    gap: 0;
+  }
+  
+  .editor-area {
+    border-radius: 0;
+  }
+}
+
+/* Minimal width - hide some UI elements */
+@media (max-width: 600px) {
+  .sidebar {
+    width: 180px;
+    min-width: 140px;
+  }
+  
+  .sidebar-section {
+    margin-bottom: 10px;
+  }
+  
+  .note-item {
+    padding: 8px;
+  }
+  
+  .note-actions {
+    opacity: 1;
+  }
+  
+  .editor-header {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  
+  .toolbar {
+    max-width: calc(100% - 100px);
+  }
+  
+  .toolbar-btn {
+    width: 26px;
+    height: 26px;
+  }
+  
+  .toolbar-divider {
+    display: none;
+  }
+  
+  .editor-actions {
+    gap: 4px;
+  }
+  
+  .btn-toggle {
+    padding: 4px 8px;
+    font-size: 9px;
+  }
+  
+  .titlebar {
+    padding: 0 10px;
+  }
+  
+  .app-title {
+    font-size: 12px;
+  }
+  
+  .window-btn {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+/* Very small windows - minimal UI */
+@media (max-width: 400px) {
+  .sidebar {
+    width: 0;
+    min-width: 0;
+    padding: 0;
+    border: none;
+    opacity: 0;
+    overflow: hidden;
+  }
+  
+  /* Hide sidebar toggle button when sidebar is auto-collapsed */
+  #toggle-sidebar-btn {
+    display: none;
+  }
+  
+  .main-content {
+    padding: 4px;
+    gap: 4px;
+  }
+  
+  .editor-area {
+    padding: 8px;
+  }
+  
+  .titlebar {
+    padding: 0 8px;
+    height: 36px;
+  }
+  
+  .app-title {
+    font-size: 11px;
+  }
+  
+  .window-btn {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .btn-icon-sm {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* Tiny windows - ultra minimal */
+@media (max-width: 300px) {
+  .titlebar-drag {
+    gap: 6px;
+  }
+  
+  .app-title {
+    display: none;
+  }
+  
+  #save-indicator {
+    display: none;
+  }
+  
+  .editor-area {
+    padding: 4px;
+  }
+  
+  .editor,
+  .preview {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}
+
+/* Ensure text doesn't overflow in small windows */
+@media (max-width: 800px) {
+  .note-item h3 {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+  
+  .folder-item {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+  
+  .search-input {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+
+/* Horizontal layout for very wide windows */
+@media (min-width: 1600px) {
+  .sidebar {
+    width: 300px;
+    max-width: 360px;
+  }
+  
+  .editor-area {
+    padding: 32px;
+  }
+  
+  .editor,
+  .preview {
+    font-size: 16px;
+  }
 }

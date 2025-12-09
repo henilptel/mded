@@ -12,7 +12,6 @@ export class UIManager {
     sidebar: document.querySelector('.sidebar') as HTMLDivElement,
     appContainer: document.querySelector('.app') as HTMLDivElement,
     minimalModeBtn: document.getElementById('minimal-mode-btn') as HTMLButtonElement,
-    vimToggleBtn: document.getElementById('vim-toggle-btn') as HTMLButtonElement,
     
     // Modals
     createFolderModal: document.getElementById('create-folder-modal') as HTMLDivElement,
@@ -43,8 +42,11 @@ export class UIManager {
     toast.textContent = message;
     this.elements.toastContainer.appendChild(toast);
     
+    // Use double RAF for smoother animation start
     requestAnimationFrame(() => {
-      toast.classList.add('show');
+      requestAnimationFrame(() => {
+        toast.classList.add('show');
+      });
     });
     
     setTimeout(() => {

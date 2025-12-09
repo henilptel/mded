@@ -188,15 +188,13 @@ document.getElementById('minimize-btn')?.addEventListener('click', () => window.
 document.getElementById('maximize-btn')?.addEventListener('click', () => window.electron.maximizeWindow());
 document.getElementById('close-btn')?.addEventListener('click', () => window.electron.closeWindow());
 
+document.getElementById('toggle-sidebar-btn')?.addEventListener('click', () => {
+    ui.toggleSidebar();
+});
+
 ui.elements.minimalModeBtn.addEventListener('click', () => {
     const isMinimal = ui.elements.appContainer.classList.contains('minimal-mode');
     ui.toggleMinimalMode(!isMinimal);
-});
-
-ui.elements.vimToggleBtn.addEventListener('click', () => {
-    const active = editorManager.toggleVimMode();
-    ui.elements.vimToggleBtn.classList.toggle('active', active);
-    ui.showToast(`Vim mode ${active ? 'enabled' : 'disabled'}`, 'info');
 });
 
 // Toolbar
@@ -240,6 +238,26 @@ shortcutManager.registerCtrl('e', (e) => {
     editorManager.togglePreview();
 });
 
+shortcutManager.registerCtrl('/', (e) => {
+    e.preventDefault();
+    document.getElementById('shortcuts-modal')?.classList.add('show');
+});
+
+shortcutManager.registerCtrl('b', (e) => {
+    e.preventDefault();
+    editorManager.insertMarkdown('**', '**');
+});
+
+shortcutManager.registerCtrl('i', (e) => {
+    e.preventDefault();
+    editorManager.insertMarkdown('*', '*');
+});
+
+shortcutManager.registerCtrl('k', (e) => {
+    e.preventDefault();
+    editorManager.insertMarkdown('[', '](url)');
+});
+
 // Shortcuts Modal
 const shortcutsModal = document.getElementById('shortcuts-modal');
 const shortcutsBtn = document.getElementById('shortcuts-btn');
@@ -258,6 +276,41 @@ shortcutManager.register('escape', () => {
     if (shortcutsModal) shortcutsModal.classList.remove('show');
 });
 
+
+// Auto-collapse sidebar on small windows
+let wasManuallyCollapsed = false;
+let lastWindowWidth = window.innerWidth;
+
+function handleWindowResize() {
+    const width = window.innerWidth;
+    const sidebar = ui.elements.sidebar;
+    const isCollapsed = sidebar.classList.contains('collapsed');
+    
+    // Auto-collapse sidebar when window is very small
+    if (width <= 400) {
+        if (!isCollapsed) {
+            sidebar.classList.add('collapsed');
+            wasManuallyCollapsed = false;
+        }
+    } else if (width > 400 && lastWindowWidth <= 400 && isCollapsed && !wasManuallyCollapsed) {
+        // Auto-expand if window grows from small to large and it was auto-collapsed
+        sidebar.classList.remove('collapsed');
+    }
+    
+    lastWindowWidth = width;
+}
+
+// Track manual sidebar toggles via button click
+document.getElementById('toggle-sidebar-btn')?.addEventListener('click', () => {
+    // Small delay to let the toggle happen first
+    setTimeout(() => {
+        wasManuallyCollapsed = ui.elements.sidebar.classList.contains('collapsed');
+    }, 0);
+});
+
+window.addEventListener('resize', handleWindowResize);
+// Check on initial load
+handleWindowResize();
 
 // Initialization
 async function init() {

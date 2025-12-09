@@ -18,7 +18,7 @@
           </svg>
         </button>
         <span class="app-title">MDed</span>
-        <span id="save-indicator" style="font-size: 11px; color: var(--text-quaternary); margin-left: 12px; opacity: 0; transition: opacity 0.3s;">Saved</span>
+        <span id="save-indicator" class="save-indicator">Saved</span>
       </div>
       <div class="window-controls">
         <button class="window-btn" id="shortcuts-btn" title="Keyboard Shortcuts (Ctrl+/)">
@@ -161,9 +161,6 @@
             </button>
           </div>
           <div class="editor-actions">
-            <button class="btn-toggle" id="vim-toggle-btn" title="Toggle Vim Mode">
-              <span>VIM</span>
-            </button>
             <button class="btn-toggle" id="toggle-preview">
               <span class="toggle-label" id="mode-label">Preview</span>
             </button>
@@ -223,16 +220,6 @@
           <div class="shortcut-row"><kbd>Ctrl</kbd>+<kbd>B</kbd><span>Bold</span></div>
           <div class="shortcut-row"><kbd>Ctrl</kbd>+<kbd>I</kbd><span>Italic</span></div>
           <div class="shortcut-row"><kbd>Ctrl</kbd>+<kbd>K</kbd><span>Link</span></div>
-        </div>
-        <div class="shortcut-section">
-          <h3>Vim Mode</h3>
-          <div class="shortcut-row"><kbd>Esc</kbd><span>Command mode</span></div>
-          <div class="shortcut-row"><kbd>i</kbd><span>Insert mode</span></div>
-          <div class="shortcut-row"><kbd>h</kbd><kbd>j</kbd><kbd>k</kbd><kbd>l</kbd><span>Navigation</span></div>
-          <div class="shortcut-row"><kbd>w</kbd>/<kbd>b</kbd><span>Word forward/back</span></div>
-          <div class="shortcut-row"><kbd>0</kbd>/<kbd>$</kbd><span>Line start/end</span></div>
-          <div class="shortcut-row"><kbd>dd</kbd><span>Delete line</span></div>
-          <div class="shortcut-row"><kbd>o</kbd>/<kbd>O</kbd><span>Open line below/above</span></div>
         </div>
       </div>
     </div>
