@@ -75,13 +75,9 @@ export class EditorManager {
     });
 
     // Interactive Checkboxes
-    this.preview.querySelectorAll('input[type="checkbox"]').forEach((checkbox, index) => {
-        // Enable the checkbox so it can capture clicks
+    // Interactive Checkboxes: Enable them so they can capture clicks (handled via delegation)
+    this.preview.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
         checkbox.removeAttribute('disabled');
-        checkbox.addEventListener('click', (e) => {
-            e.preventDefault(); // allow us to handle the toggle in markdown
-            this.toggleCheckbox(index);
-        });
     });
 
     this.updateStats();
@@ -89,20 +85,20 @@ export class EditorManager {
 
   updateStats() {
       const markdown = this.editor.value;
-      const total = (markdown.match(/- \[[ x]\]/g) || []).length;
-      const completed = (markdown.match(/- \[x\]/g) || []).length;
+      const total = (markdown.match(/- \[[ xX]\]/g) || []).length;
+      const completed = (markdown.match(/- \[[xX]\]/g) || []).length;
       this.onStatsUpdate?.(completed, total);
   }
 
   toggleCheckbox(index: number) {
-      const regex = /- \[[ x]\]/g;
+      const regex = /- \[[ xX]\]/g;
       const content = this.editor.value;
       let match;
       let current = 0;
       
       while ((match = regex.exec(content)) !== null) {
           if (current === index) {
-              const isChecked = match[0] === '- [x]';
+              const isChecked = match[0].includes('x') || match[0].includes('X');
               const newStr = isChecked ? '- [ ]' : '- [x]';
               
               this.editor.value = content.substring(0, match.index) + 
@@ -213,6 +209,19 @@ export class EditorManager {
             this.handleAutoPair(e);
         }
     });
+
+    // Delegated click listener for checkboxes
+    this.preview.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'checkbox') {
+            e.preventDefault();
+            const checkboxes = this.preview.querySelectorAll('input[type="checkbox"]');
+            const index = Array.from(checkboxes).indexOf(target as HTMLInputElement);
+            if (index !== -1) {
+                this.toggleCheckbox(index);
+            }
+        }
+    });
   }
 
   private handleTab(e: KeyboardEvent) {
@@ -293,10 +302,11 @@ export class EditorManager {
           // Let's manually restore selection? 
           // execCommand usually places cursor at end of inserted text.
       } else {
+          const originalIndex = this.editor.selectionStart;
           document.execCommand('insertText', false, char + close);
-          // Move cursor back one
-          this.editor.selectionStart = this.editor.selectionEnd - 1;
-          this.editor.selectionEnd = this.editor.selectionEnd;
+          // Set caret between the pair (no selection)
+          this.editor.selectionStart = originalIndex + 1;
+          this.editor.selectionEnd = originalIndex + 1;
       }
       
       this.onInput?.();

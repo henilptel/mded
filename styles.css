@@ -10,39 +10,39 @@
   --glass-bg-lighter: rgba(36, 36, 36, 0.55);
   --glass-bg-darker: rgba(16, 16, 16, 0.75);
   --glass-blur: blur(40px) saturate(120%);
-  
+
   /* Rim Light & Borders */
   --rim-border: 1px solid rgba(255, 255, 255, 0.1);
   --rim-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
-  
+
   /* Depth Shadows */
   --shadow-floating: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
   --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.35);
   --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.2);
-  
+
   /* Typography */
-  --text-primary: #FFFFFF;
+  --text-primary: #ffffff;
   --text-secondary: rgba(255, 255, 255, 0.85);
   --text-tertiary: rgba(255, 255, 255, 0.5);
   --text-quaternary: rgba(255, 255, 255, 0.3);
-  
+
   /* Interactive (Gaze) States */
   --gaze-idle: rgba(255, 255, 255, 0.05);
   --gaze-hover: rgba(255, 255, 255, 0.1);
   --gaze-active: rgba(255, 255, 255, 0.15);
-  
+
   /* Accent Colors */
   --accent-blue: #60a5fa;
   --accent-blue-glow: rgba(96, 165, 250, 0.2);
   --accent-green: #34d399;
   --accent-red: #f87171;
-  
+
   /* Border Radius */
   --radius-lg: 16px;
   --radius-md: 12px;
   --radius-sm: 8px;
   --radius-pill: 999px;
-  
+
   /* Smooth Easing */
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out-smooth: cubic-bezier(0, 0, 0.2, 1);
@@ -82,8 +82,8 @@
 
 /* ============ Body ============ */
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", 
-    "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
   overflow: hidden;
   background: #0a0a0a;
   color: var(--text-primary);
@@ -154,7 +154,6 @@ body {
   -webkit-app-region: no-drag;
 }
 
-
 .window-btn {
   width: 30px;
   height: 30px;
@@ -166,7 +165,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s var(--ease-smooth), color 0.2s var(--ease-smooth);
+  transition: background-color 0.2s var(--ease-smooth),
+    color 0.2s var(--ease-smooth);
 }
 
 .window-btn:hover {
@@ -195,7 +195,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s var(--ease-smooth), color 0.2s var(--ease-smooth);
+  transition: background-color 0.2s var(--ease-smooth),
+    color 0.2s var(--ease-smooth);
   -webkit-app-region: no-drag;
 }
 
@@ -223,8 +224,8 @@ body {
   flex-direction: column;
   padding: 16px;
   flex-shrink: 0;
-  transition: width 0.3s var(--ease-smooth), padding 0.3s var(--ease-smooth), 
-              opacity 0.25s var(--ease-smooth), border-width 0.3s var(--ease-smooth);
+  transition: width 0.3s var(--ease-smooth), padding 0.3s var(--ease-smooth),
+    opacity 0.25s var(--ease-smooth), border-width 0.3s var(--ease-smooth);
   will-change: width, opacity;
 }
 
@@ -273,7 +274,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s var(--ease-smooth), color 0.2s var(--ease-smooth);
+  transition: background-color 0.2s var(--ease-smooth),
+    color 0.2s var(--ease-smooth);
 }
 
 .btn-icon:hover {
@@ -301,7 +303,8 @@ body {
   cursor: pointer;
   color: var(--text-tertiary);
   background: transparent;
-  transition: background-color 0.2s var(--ease-smooth), color 0.2s var(--ease-smooth);
+  transition: background-color 0.2s var(--ease-smooth),
+    color 0.2s var(--ease-smooth);
   font-size: 13px;
 }
 
@@ -334,7 +337,8 @@ body {
   color: var(--text-primary);
   font-size: 13px;
   outline: none;
-  transition: border-color 0.2s var(--ease-smooth), background-color 0.2s var(--ease-smooth);
+  transition: border-color 0.2s var(--ease-smooth),
+    background-color 0.2s var(--ease-smooth);
 }
 
 .search-input:focus {
@@ -374,8 +378,8 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background-color 0.2s var(--ease-smooth), border-color 0.2s var(--ease-smooth), 
-              transform 0.2s var(--ease-smooth);
+  transition: background-color 0.2s var(--ease-smooth),
+    border-color 0.2s var(--ease-smooth), transform 0.2s var(--ease-smooth);
 }
 
 .note-item:hover {
@@ -516,7 +520,8 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  transition: background-color 0.2s var(--ease-smooth), color 0.2s var(--ease-smooth);
+  transition: background-color 0.2s var(--ease-smooth),
+    color 0.2s var(--ease-smooth);
 }
 
 .btn-toggle:hover {
@@ -566,7 +571,8 @@ body {
 .preview {
   display: none;
   overflow-y: auto;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    Roboto, sans-serif;
 }
 
 .editor.preview-mode {
@@ -578,8 +584,12 @@ body {
 }
 
 /* ============ Preview Typography ============ */
-.preview h1, .preview h2, .preview h3, 
-.preview h4, .preview h5, .preview h6 {
+.preview h1,
+.preview h2,
+.preview h3,
+.preview h4,
+.preview h5,
+.preview h6 {
   margin-top: 24px;
   margin-bottom: 12px;
   font-weight: 600;
@@ -627,7 +637,8 @@ body {
   padding: 0;
 }
 
-.preview ul, .preview ol {
+.preview ul,
+.preview ol {
   margin-bottom: 14px;
   padding-left: 20px;
   color: var(--text-secondary);
@@ -661,7 +672,8 @@ body {
   margin-bottom: 14px;
 }
 
-.preview th, .preview td {
+.preview th,
+.preview td {
   border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 8px 12px;
   text-align: left;
@@ -675,6 +687,44 @@ body {
 .preview img {
   max-width: 100%;
   border-radius: var(--radius-md);
+}
+
+/* ============ Preview Checkboxes ============ */
+.preview input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  position: relative;
+  top: 3px;
+  margin-right: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.preview input[type="checkbox"]:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.preview input[type="checkbox"]:checked {
+  background: var(--accent-blue); /* #60a5fa */
+  border-color: var(--accent-blue);
+}
+
+.preview input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 4px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 /* ============ Minimal Mode ============ */
@@ -712,7 +762,8 @@ body {
   justify-content: center;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.25s var(--ease-smooth), visibility 0.25s var(--ease-smooth);
+  transition: opacity 0.25s var(--ease-smooth),
+    visibility 0.25s var(--ease-smooth);
   z-index: 1000;
   will-change: opacity;
 }
@@ -728,7 +779,8 @@ body {
   max-height: 80vh;
   overflow-y: auto;
   transform: translate3d(0, 10px, 0) scale(0.95);
-  transition: transform 0.3s var(--ease-out-smooth), opacity 0.3s var(--ease-out-smooth);
+  transition: transform 0.3s var(--ease-out-smooth),
+    opacity 0.3s var(--ease-out-smooth);
   opacity: 0;
   will-change: transform, opacity;
 }
@@ -824,7 +876,8 @@ kbd {
   box-shadow: var(--shadow-elevated);
   transform: translate3d(100%, 0, 0);
   opacity: 0;
-  transition: transform 0.3s var(--ease-out-smooth), opacity 0.3s var(--ease-out-smooth);
+  transition: transform 0.3s var(--ease-out-smooth),
+    opacity 0.3s var(--ease-out-smooth);
   pointer-events: auto;
   will-change: transform, opacity;
 }
@@ -855,20 +908,20 @@ kbd {
     min-width: 180px;
     padding: 12px;
   }
-  
+
   .main-content {
     padding: 8px;
     gap: 8px;
   }
-  
+
   .editor-area {
     padding: 16px;
   }
-  
+
   .editor-header {
     padding: 8px 12px;
   }
-  
+
   .toolbar-btn {
     width: 30px;
     height: 30px;
@@ -882,48 +935,48 @@ kbd {
     min-width: 160px;
     padding: 10px;
   }
-  
+
   .sidebar-header h2 {
     font-size: 13px;
   }
-  
+
   .note-item {
     padding: 10px;
   }
-  
+
   .note-item h3 {
     font-size: 12px;
   }
-  
+
   .editor-area {
     padding: 12px;
   }
-  
+
   .editor,
   .preview {
     font-size: 14px;
   }
-  
+
   .editor-header {
     padding: 8px 10px;
     gap: 8px;
   }
-  
+
   .toolbar {
     gap: 1px;
     max-width: calc(100% - 120px);
   }
-  
+
   .toolbar-btn {
     width: 28px;
     height: 28px;
     flex-shrink: 0;
   }
-  
+
   .editor-actions {
     gap: 6px;
   }
-  
+
   .btn-toggle {
     padding: 5px 10px;
     font-size: 10px;
@@ -937,20 +990,20 @@ kbd {
     padding: 6px 8px;
     gap: 4px;
   }
-  
+
   .toolbar {
     max-width: calc(100% - 90px);
   }
-  
+
   .toolbar-btn {
     width: 24px;
     height: 24px;
   }
-  
+
   .editor-actions {
     gap: 4px;
   }
-  
+
   .btn-toggle {
     padding: 4px 6px;
     font-size: 9px;
@@ -962,11 +1015,11 @@ kbd {
   .editor-header {
     display: none;
   }
-  
+
   .editor-container {
     gap: 0;
   }
-  
+
   .editor-area {
     border-radius: 0;
   }
@@ -978,54 +1031,54 @@ kbd {
     width: 180px;
     min-width: 140px;
   }
-  
+
   .sidebar-section {
     margin-bottom: 10px;
   }
-  
+
   .note-item {
     padding: 8px;
   }
-  
+
   .note-actions {
     opacity: 1;
   }
-  
+
   .editor-header {
     padding: 6px 10px;
     gap: 6px;
   }
-  
+
   .toolbar {
     max-width: calc(100% - 100px);
   }
-  
+
   .toolbar-btn {
     width: 26px;
     height: 26px;
   }
-  
+
   .toolbar-divider {
     display: none;
   }
-  
+
   .editor-actions {
     gap: 4px;
   }
-  
+
   .btn-toggle {
     padding: 4px 8px;
     font-size: 9px;
   }
-  
+
   .titlebar {
     padding: 0 10px;
   }
-  
+
   .app-title {
     font-size: 12px;
   }
-  
+
   .window-btn {
     width: 26px;
     height: 26px;
@@ -1042,35 +1095,35 @@ kbd {
     opacity: 0;
     overflow: hidden;
   }
-  
+
   /* Hide sidebar toggle button when sidebar is auto-collapsed */
   #toggle-sidebar-btn {
     display: none;
   }
-  
+
   .main-content {
     padding: 4px;
     gap: 4px;
   }
-  
+
   .editor-area {
     padding: 8px;
   }
-  
+
   .titlebar {
     padding: 0 8px;
     height: 36px;
   }
-  
+
   .app-title {
     font-size: 11px;
   }
-  
+
   .window-btn {
     width: 24px;
     height: 24px;
   }
-  
+
   .btn-icon-sm {
     width: 22px;
     height: 22px;
@@ -1082,19 +1135,19 @@ kbd {
   .titlebar-drag {
     gap: 6px;
   }
-  
+
   .app-title {
     display: none;
   }
-  
+
   #save-indicator {
     display: none;
   }
-  
+
   .editor-area {
     padding: 4px;
   }
-  
+
   .editor,
   .preview {
     font-size: 12px;
@@ -1109,12 +1162,12 @@ kbd {
     overflow: visible;
     text-overflow: clip;
   }
-  
+
   .folder-item {
     font-size: 12px;
     padding: 6px 10px;
   }
-  
+
   .search-input {
     padding: 8px 12px;
     font-size: 12px;
@@ -1127,11 +1180,11 @@ kbd {
     width: 300px;
     max-width: 360px;
   }
-  
+
   .editor-area {
     padding: 32px;
   }
-  
+
   .editor,
   .preview {
     font-size: 16px;
