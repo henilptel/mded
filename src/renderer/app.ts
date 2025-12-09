@@ -230,6 +230,19 @@ editorManager.onInput = () => {
     }, 1000);
 };
 
+editorManager.onStatsUpdate = (completed, total) => {
+    const statsEl = document.getElementById('stats-indicator');
+    if (statsEl) {
+        if (total > 0) {
+            statsEl.textContent = `${completed}/${total} completed`;
+            statsEl.style.opacity = '1';
+        } else {
+            statsEl.textContent = '';
+            statsEl.style.opacity = '0';
+        }
+    }
+};
+
 // Buttons
 document.getElementById('new-note-btn')?.addEventListener('click', async () => {
     const result = await noteManager.createNote();
@@ -339,6 +352,16 @@ shortcutManager.registerCtrl('d', (e) => {
 shortcutManager.register('shift+delete', (e) => {
     e.preventDefault();
     editorManager.deleteCurrentLine();
+});
+
+shortcutManager.registerCtrl('=', (e) => {
+    e.preventDefault();
+    editorManager.changeFontSize(2);
+});
+
+shortcutManager.registerCtrl('-', (e) => {
+    e.preventDefault();
+    editorManager.changeFontSize(-2);
 });
 
 // Shortcuts Modal
