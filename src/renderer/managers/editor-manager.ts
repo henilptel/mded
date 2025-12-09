@@ -8,6 +8,8 @@ export class EditorManager {
   public onInput: (() => void) | null = null;
   public onSave: (() => void) | null = null;
 
+  private originalContent: string = '';
+
   constructor(editorEl: HTMLTextAreaElement, previewEl: HTMLDivElement, modeLabelEl: HTMLSpanElement) {
     this.editor = editorEl;
     this.preview = previewEl;
@@ -22,11 +24,17 @@ export class EditorManager {
 
   setContent(content: string) {
     this.editor.value = content;
+    this.originalContent = content; // Track original
     this.updatePreview();
+  }
+
+  isContentChanged(): boolean {
+      return this.editor.value !== this.originalContent;
   }
 
   clear() {
     this.editor.value = '';
+    this.originalContent = '';
     this.preview.innerHTML = '';
   }
 

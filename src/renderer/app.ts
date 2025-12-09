@@ -190,11 +190,18 @@ async function saveCurrentNote() {
     }
 
     if (currentNoteId) {
+        // Optimization: prevent updating modified time if content hasn't changed
+        if (!editorManager.isContentChanged()) {
+             return;
+        }
+
         ui.updateSaveIndicator('saving');
         const content = editorManager.getContent();
         const result = await noteManager.saveNote(currentNoteId, content, activeNoteFolder);
         if (result.success) {
             ui.updateSaveIndicator('saved');
+            // Update original content so subsequent saves also check correctly
+            editorManager.setContent(content); 
         } else {
              // If error is ENOENT, it means note was deleted. Stop trying to save it.
             if (result.error && (result.error.includes('ENOENT') || result.error.includes('no such file'))) {
