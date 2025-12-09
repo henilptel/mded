@@ -100,21 +100,18 @@ export class EditorManager {
     
     // Get current line content
     const line = this.editor.value.substring(lineStart, end);
-    
-    // We want to insert a newline + the line content after the current line
-    // If we are at the very end of file, we might need a preliminary newline if one doesn't exist
     const insertContent = '\n' + line;
     
-    this.editor.value = this.editor.value.substring(0, end) + insertContent + this.editor.value.substring(end);
+    // Use execCommand to insert text so it's undoable
+    this.editor.focus();
+    this.editor.setSelectionRange(end, end);
+    document.execCommand('insertText', false, insertContent);
     
-    // Move cursor to the new line, same column if possible
+    // Move cursor to the new line
     const column = start - lineStart;
     const newStart = end + 1 + column;
+    this.editor.setSelectionRange(newStart, newStart);
     
-    this.editor.selectionStart = newStart;
-    this.editor.selectionEnd = newStart;
-    
-    this.editor.focus();
     this.updatePreview();
     this.onInput?.();
   }
@@ -124,22 +121,16 @@ export class EditorManager {
     const lineStart = this.editor.value.lastIndexOf('\n', start - 1) + 1;
     let lineEnd = this.editor.value.indexOf('\n', start);
     
-    // If last line (no newline found), set to length
     if (lineEnd === -1) {
         lineEnd = this.editor.value.length;
     } else {
-        // If not last line, include the newline character in deletion so the line actually disappears
-        lineEnd += 1;
+        lineEnd += 1; // Include newline
     }
     
-    // Deleting everything from lineStart to lineEnd
-    this.editor.value = this.editor.value.substring(0, lineStart) + this.editor.value.substring(lineEnd);
-    
-    // Move cursor to lineStart (which is now the start of the *next* line, or same position)
-    this.editor.selectionStart = lineStart;
-    this.editor.selectionEnd = lineStart;
-    
     this.editor.focus();
+    this.editor.setSelectionRange(lineStart, lineEnd);
+    document.execCommand('delete');
+    
     this.updatePreview();
     this.onInput?.();
   }

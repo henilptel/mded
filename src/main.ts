@@ -218,9 +218,9 @@ function registerClipboardShortcut(key: string): boolean {
         new Notification({ title: 'MDed', body: 'Note saved from clipboard!' }).show();
         
         // If window is open, refresh (could send IPC, but for now relies on manual or auto refresh)
-        if (mainWindow && mainWindow.isVisible()) {
-           // Optional: mainWindow.webContents.send('note-externally-created');
-        }
+         if (mainWindow && mainWindow.isVisible()) {
+            mainWindow.webContents.send('refresh-notes', noteId);
+         }
       } catch (err) {
         console.error('Failed to save clipboard note:', err);
         new Notification({ title: 'MDed', body: 'Failed to save note' }).show();
@@ -234,18 +234,33 @@ function registerClipboardShortcut(key: string): boolean {
 
 function createQuickNoteWindow(): void {
   if (quickNoteWindow) {
-    if (quickNoteWindow.isVisible()) {
-      quickNoteWindow.hide();
+    // Check if somehow destroyed but not nulled
+    if (quickNoteWindow.isDestroyed()) {
+        quickNoteWindow = null;
     } else {
-      quickNoteWindow.show();
-      quickNoteWindow.focus();
+        if (quickNoteWindow.isVisible()) {
+        quickNoteWindow.hide();
+        } else {
+        quickNoteWindow.show();
+        quickNoteWindow.focus();
+        }
+        return;
     }
-    return;
   }
+  
+  const { screen } = require('electron');
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width: screenWidth, x: screenX, y: screenY } = primaryDisplay.workArea;
+  
+  const windowWidth = 500;
+  const windowHeight = 300;
+  const padding = 20;
 
   quickNoteWindow = new BrowserWindow({
-    width: 500,
-    height: 300,
+    width: windowWidth,
+    height: windowHeight,
+    x: screenX + screenWidth - windowWidth - padding,
+    y: screenY + padding,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -261,15 +276,23 @@ function createQuickNoteWindow(): void {
   quickNoteWindow.loadFile(path.join(__dirname, '../quick-note.html'));
 
   quickNoteWindow.on('blur', () => {
-    quickNoteWindow?.hide();
+    if (quickNoteWindow && !quickNoteWindow.isDestroyed()) {
+        quickNoteWindow.hide();
+    }
   });
   
   quickNoteWindow.on('close', (e) => {
       // Don't simplify destroy, just hide
       if (!isQuitting) {
           e.preventDefault();
-          quickNoteWindow?.hide();
+          if (quickNoteWindow && !quickNoteWindow.isDestroyed()) {
+              quickNoteWindow.hide();
+          }
       }
+  });
+
+  quickNoteWindow.on('closed', () => {
+      quickNoteWindow = null;
   });
 }
 
@@ -582,7 +605,7 @@ ipcMain.handle('get-last-note', () => {
   };
 });
 
-ipcMain.handle('save-last-note', (_event, noteId: string, folder: string) => {
+ipcMain.handle('save-last-note', (_event, noteId: string | null, folder: string | null) => {
   config.lastNoteId = noteId;
   config.lastFolder = folder;
   scheduleSaveConfig();
@@ -599,10 +622,11 @@ ipcMain.handle('save-quick-note', async (_event, content: string) => {
       new Notification({ title: 'MDed', body: 'Quick note saved' }).show();
       quickNoteWindow?.hide();
       
-      if (mainWindow && mainWindow.isVisible()) {
-          // Optional refresh logic
-      }
-      return { success: true };
+      
+       if (mainWindow && mainWindow.isVisible()) {
+           mainWindow.webContents.send('refresh-notes', noteId);
+       }
+       return { success: true };
   } catch (error) {
       console.error('Error saving quick note:', error);
       return { success: false, error: String(error) };

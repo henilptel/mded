@@ -109,11 +109,19 @@ function renderNotes(notes: NoteInfo[]) {
           if (confirmed) {
               await noteManager.deleteNote(id, folder);
               ui.showToast('Note deleted', 'success');
+              
               if (state.currentNoteId === id) {
+                  // Clear editor and state immediately
                   editorManager.clear();
                   noteManager.setCurrentNote(null);
+                  window.electron.saveLastNote(null, null); // Clear persistence
+                  
+                  // Optional: Load the next available note or the first one in list
+                  // For now, just leaving it empty or letting refreshNotes handle list
+                  // refreshNotes will re-render list, and if no note selected, UI shows empty
               }
-              refreshNotes();
+              
+              await refreshNotes();
           }
       },
       onDragStart: (id, folder) => {
@@ -139,12 +147,48 @@ async function loadNote(id: string, folder: string) {
         editorManager.setContent(result.content);
         refreshNotes(); // To update active class
     } else {
-        ui.showToast(`Failed to load: ${result.error}`, 'error');
+        // If note is missing, clear state and persistence
+        if (result.error && (result.error.includes('ENOENT') || result.error.includes('no such file'))) {
+             ui.showToast('Note found (removed)', 'error');
+             editorManager.clear();
+             noteManager.setCurrentNote(null);
+             window.electron.saveLastNote(null, null);
+             refreshNotes();
+        } else {
+            ui.showToast(`Failed to load: ${result.error}`, 'error');
+        }
     }
 }
 
 async function saveCurrentNote() {
     const { currentNoteId, activeNoteFolder } = noteManager.currentState;
+    // Don't save if no note selected or if it was just deleted (handled by caller usually but safety check)
+    if (!currentNoteId) {
+        // If no note selected but we have content, create a new one!
+        const content = editorManager.getContent();
+        if (content && content.trim().length > 0) {
+            ui.updateSaveIndicator('saving');
+            const result = await noteManager.createNote();
+            if (result.success && result.noteId) {
+                // Set as current immediately
+                noteManager.setCurrentNote(result.noteId, result.folder);
+                ui.showToast('New note created', 'success');
+                // Refresh to show in list
+                await refreshNotes();
+                // Now save the content
+                const saveResult = await noteManager.saveNote(result.noteId, content, result.folder || '');
+                if (saveResult.success) {
+                    ui.updateSaveIndicator('saved');
+                } else {
+                    ui.updateSaveIndicator('error', saveResult.error);
+                }
+            } else {
+                ui.showToast(`Failed to create note: ${result.error}`, 'error');
+            }
+        }
+        return;
+    }
+
     if (currentNoteId) {
         ui.updateSaveIndicator('saving');
         const content = editorManager.getContent();
@@ -152,7 +196,13 @@ async function saveCurrentNote() {
         if (result.success) {
             ui.updateSaveIndicator('saved');
         } else {
-            ui.updateSaveIndicator('error', result.error);
+             // If error is ENOENT, it means note was deleted. Stop trying to save it.
+            if (result.error && (result.error.includes('ENOENT') || result.error.includes('no such file'))) {
+                 noteManager.setCurrentNote(null); // Clear state so we don't try again
+                 ui.updateSaveIndicator('saved'); // Or just hidden
+            } else {
+                ui.updateSaveIndicator('error', result.error);
+            }
         }
     }
 }
@@ -348,16 +398,28 @@ async function init() {
     const display = document.getElementById('shortcut-display');
     if (display) display.textContent = key;
 
-    // Restore last note
-    const lastState = await window.electron.getLastNote();
-    if (lastState.noteId) {
+    // Listen for external updates (Quick Note, Clipboard)
+    window.electron.onRefreshNotes((noteId) => {
+        refreshNotes();
+        if (noteId) {
+             ui.showToast('New note created externally');
+        }
+    });
+
+    // Load initial state
+    const { noteId, folder } = await window.electron.getLastNote();
+    if (noteId) {
         // Ensure folder is loaded/valid context
-        if (lastState.folder) {
-            noteManager.setCurrentFolder(lastState.folder);
+        if (folder) {
+            noteManager.setCurrentFolder(folder);
             await refreshFolders(); // Update UI selection
             await refreshNotes();   // Update list for that folder
         }
-        await loadNote(lastState.noteId, lastState.folder || '');
+        await loadNote(noteId, folder || '');
+    } else {
+        // Default to first folder if available, or just list root
+        await refreshFolders();
+        await refreshNotes();
     }
 }
 

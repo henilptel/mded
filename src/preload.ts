@@ -52,8 +52,11 @@ const electronAPI = {
   
   // Persistence
   getLastNote: (): Promise<{ noteId: string | null, folder: string | null }> => ipcRenderer.invoke('get-last-note'),
-  saveLastNote: (noteId: string, folder: string): Promise<ApiResult> => ipcRenderer.invoke('save-last-note', noteId, folder),
-  saveQuickNote: (content: string): Promise<ApiResult> => ipcRenderer.invoke('save-quick-note', content)
+  saveLastNote: (noteId: string | null, folder: string | null): Promise<ApiResult> => ipcRenderer.invoke('save-last-note', noteId, folder),
+  saveQuickNote: (content: string): Promise<ApiResult> => ipcRenderer.invoke('save-quick-note', content),
+  
+  // Events
+  onRefreshNotes: (callback: (noteId?: string) => void) => ipcRenderer.on('refresh-notes', (_event, noteId) => callback(noteId))
 };
 
 contextBridge.exposeInMainWorld('electron', electronAPI);
