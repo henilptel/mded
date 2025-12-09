@@ -6,7 +6,7 @@ export class NoteManager {
   private activeNoteFolder: string = '';
 
 
-  constructor() {}
+
 
   get currentState() {
     return {
@@ -28,23 +28,68 @@ export class NoteManager {
     }
   }
 
+    async togglePin(noteId: string): Promise<import('../types').ApiResult<{pinned: boolean}>> {
+        return await (window.electron as any).togglePinNote(noteId);
+    }
+
   async loadFolders(): Promise<FolderInfo[]> {
     return await window.electron.listFolders();
   }
 
-  async listNotes(searchQuery: string = ''): Promise<NoteInfo[]> {
-    const isSearchMode = searchQuery.length > 0;
-    const fetchFolder = isSearchMode ? undefined : (this.currentFolder || undefined);
+    async listNotes(searchQuery: string = ''): Promise<NoteInfo[]> {
+      const isSearchMode = searchQuery.length > 0;
+      const fetchFolder = isSearchMode ? undefined : (this.currentFolder || undefined);
+      
+      let notes = await window.electron.listNotes(fetchFolder);
+      
+      if (isSearchMode) {
+        notes = notes.filter(note => note.title.toLowerCase().includes(searchQuery.toLowerCase()));
+      }
+
+      return this.sortNotes(notes);
+    }
     
-    let notes = await window.electron.listNotes(fetchFolder);
-    
-    if (isSearchMode) {
-      notes = notes.filter(note => note.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    async listAllNotes(): Promise<NoteInfo[]> {
+        const notes = await window.electron.listNotes(undefined);
+        return this.sortNotes(notes);
     }
 
-    // Always sort by modified date (descending)
-    return notes.sort((a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime());
-  }
+    public sortOrder: 'modified-desc' | 'modified-asc' | 'created-desc' | 'created-asc' | 'title-asc' | 'title-desc' = 'modified-desc';
+
+    constructor() {
+        const saved = localStorage.getItem('mded-sort-order');
+        if (saved) this.sortOrder = saved as any;
+    }
+
+    public setSortOrder(order: typeof this.sortOrder) {
+        this.sortOrder = order;
+        localStorage.setItem('mded-sort-order', order);
+    }
+
+    private sortNotes(notes: NoteInfo[]): NoteInfo[] {
+        return notes.sort((a, b) => {
+            // Pinned notes always on top
+            if (a.pinned && !b.pinned) return -1;
+            if (!a.pinned && b.pinned) return 1;
+
+            switch (this.sortOrder) {
+                case 'modified-desc':
+                    return new Date(b.modified).getTime() - new Date(a.modified).getTime();
+                case 'modified-asc':
+                    return new Date(a.modified).getTime() - new Date(b.modified).getTime();
+                case 'created-desc':
+                    return new Date(b.created).getTime() - new Date(a.created).getTime();
+                case 'created-asc':
+                    return new Date(a.created).getTime() - new Date(b.created).getTime();
+                case 'title-asc':
+                    return a.title.localeCompare(b.title);
+                case 'title-desc':
+                    return b.title.localeCompare(a.title);
+                default:
+                    return new Date(b.modified).getTime() - new Date(a.modified).getTime();
+            }
+        });
+    }
 
   async readNote(id: string, folder: string): Promise<ApiResult> {
     return await window.electron.readNote(id, folder || undefined);

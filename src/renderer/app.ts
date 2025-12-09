@@ -74,7 +74,11 @@ async function refreshFolders() {
   });
 }
 
+let currentDisplayedNotes: NoteInfo[] = [];
+let focusedNoteIndex = -1;
+
 function renderNotes(notes: NoteInfo[]) {
+  currentDisplayedNotes = notes;
   const state = noteManager.currentState;
   ui.renderNotes(notes, { 
       id: state.currentNoteId, 
@@ -130,9 +134,79 @@ function renderNotes(notes: NoteInfo[]) {
       onDrop: async (targetId, targetFolder) => {
           // Reorder logic handling
           // noteManager.reorderNote(...)
+      },
+      onPin: async (id) => {
+          await noteManager.togglePin(id);
+          await refreshNotes();
       }
   });
+
+  // Highlight focused item if exists
+  if (focusedNoteIndex >= 0 && focusedNoteIndex < notes.length) {
+      const noteId = notes[focusedNoteIndex].id;
+      const noteEl = document.querySelector(`.note-item[data-note-id="${noteId}"]`) as HTMLElement;
+      if (noteEl) noteEl.classList.add('focused');
+  }
 }
+
+// Sidebar Navigation
+document.addEventListener('keydown', (e) => {
+    // Only if sidebar is visible and no modals are open
+    if (ui.elements.sidebar.classList.contains('collapsed')) return;
+    if (document.querySelector('.modal-overlay.show')) return;
+    
+    // Allow navigation if body is focused or search input is focused
+    // or if we clicked into the sidebar
+    const active = document.activeElement;
+    const isSidebarContext = active === document.body || active === ui.elements.searchInput || (active && ui.elements.sidebar.contains(active));
+    
+    if (!isSidebarContext) return;
+    
+    // Ignore if Ctrl/Meta is pressed (shortcuts)
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (currentDisplayedNotes.length === 0) return;
+        focusedNoteIndex++;
+        if (focusedNoteIndex >= currentDisplayedNotes.length) focusedNoteIndex = currentDisplayedNotes.length - 1;
+        updateSidebarFocus();
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (currentDisplayedNotes.length === 0) return;
+        focusedNoteIndex--;
+        if (focusedNoteIndex < 0) focusedNoteIndex = 0;
+        updateSidebarFocus();
+    } else if (e.key === 'Enter') {
+        if (focusedNoteIndex >= 0 && focusedNoteIndex < currentDisplayedNotes.length) {
+            // Only if we are not renaming or searching? 
+            // If in search input, Enter moves to note
+            e.preventDefault();
+            const note = currentDisplayedNotes[focusedNoteIndex];
+            loadNote(note.id, note.folder);
+            // unfocus search input so we can type in editor?
+            // Actually usually we want to focus editor
+            editorManager.focus();
+        }
+    }
+});
+
+function updateSidebarFocus() {
+    // Remove previous focus
+    document.querySelectorAll('.note-item.focused').forEach(el => el.classList.remove('focused'));
+    
+    if (focusedNoteIndex >= 0 && focusedNoteIndex < currentDisplayedNotes.length) {
+        const note = currentDisplayedNotes[focusedNoteIndex];
+        const noteEl = document.querySelector(`.note-item[data-note-id="${note.id}"]`) as HTMLElement;
+        if (noteEl) {
+            noteEl.classList.add('focused');
+            noteEl.scrollIntoView({ block: 'nearest' });
+        }
+    }
+}
+
+// ============ Recent Notes History ============
+const recentNotesStack: {id: string, folder: string}[] = [];
 
 async function loadNote(id: string, folder: string) {
     // Auto-save previous
@@ -145,7 +219,25 @@ async function loadNote(id: string, folder: string) {
     
     if (result.success && result.content !== undefined) {
         editorManager.setContent(result.content);
-        refreshNotes(); // To update active class
+        
+        // Sync Sidebar if folder changed or if search was active
+        if (folder !== noteManager.currentState.currentFolder) {
+            noteManager.setCurrentFolder(folder);
+            ui.elements.searchInput.value = ''; // Clear search to ensure note is visible
+            await refreshFolders(); // Update selected folder in sidebar
+        }
+        
+        refreshNotes(); // To update active class and list
+        
+        // Update History
+        // Remove if exists
+        const idx = recentNotesStack.findIndex(n => n.id === id);
+        if (idx !== -1) {
+            recentNotesStack.splice(idx, 1);
+        }
+        // Push to top
+        recentNotesStack.push({ id, folder });
+        
     } else {
         // If note is missing, clear state and persistence
         if (result.error && (result.error.includes('ENOENT') || result.error.includes('no such file'))) {
@@ -159,6 +251,19 @@ async function loadNote(id: string, folder: string) {
         }
     }
 }
+
+// ... existing code ...
+
+// Shortcut
+shortcutManager.registerCtrl('Tab', (e) => {
+    e.preventDefault();
+    if (recentNotesStack.length > 1) {
+        // Get the previous one (2nd from top)
+        // stack = [A, B]. Current is B. Target is A.
+        const target = recentNotesStack[recentNotesStack.length - 2];
+        loadNote(target.id, target.folder);
+    }
+});
 
 async function saveCurrentNote() {
     const { currentNoteId, activeNoteFolder } = noteManager.currentState;
@@ -418,8 +523,200 @@ window.addEventListener('resize', handleWindowResize);
 // Check on initial load
 handleWindowResize();
 
+// ============ Command Palette Logic ============
+
+let allPaletteNotes: NoteInfo[] = [];
+let filteredPaletteNotes: NoteInfo[] = [];
+let commandPaletteSelectedIndex = 0;
+
+function renderCommandPaletteResults(notes: NoteInfo[]) {
+    const container = ui.elements.commandPaletteResults;
+    container.innerHTML = '';
+    
+    if (notes.length === 0) {
+        const item = document.createElement('div');
+        item.className = 'note-item';
+        item.style.cursor = 'default';
+        item.textContent = 'No matching notes';
+        container.appendChild(item);
+        return;
+    }
+
+    notes.forEach((note, index) => {
+        const item = document.createElement('div');
+        item.className = 'note-item';
+        if (index === commandPaletteSelectedIndex) {
+            item.classList.add('active');
+            // Scroll into view if needed
+            // Use setTimeout to ensure layout is done? usually fine synchronously here
+        }
+        
+        const dateStr = new Date(note.modified).toLocaleDateString();
+        // Highlight title match?
+        // Reuse ui.escapeHtml
+        // For simple MVP text content is fine
+        
+        item.innerHTML = `
+            <div class="note-content">
+                <h3>${ui.escapeHtml(note.title)}</h3>
+                <div class="note-meta">
+                   <span class="note-date">${dateStr}</span>
+                   ${note.folder ? `<span class="note-folder">${note.folder}</span>` : ''}
+                </div>
+            </div>
+        `;
+        
+        item.addEventListener('click', () => {
+            loadNote(note.id, note.folder);
+            closeCommandPalette();
+        });
+        
+        // Ensure active item is visible
+        if (index === commandPaletteSelectedIndex) {
+             // We can't scroll immediately if not attached? attached above.
+             // Manual scroll logic or scrollIntoView
+             // scrollIntoView might scroll the whole modal if not careful with options
+        }
+
+        container.appendChild(item);
+    });
+    
+    // Scroll active element into view
+    const activeItem = container.children[commandPaletteSelectedIndex] as HTMLElement;
+    if (activeItem) {
+        activeItem.scrollIntoView({ block: 'nearest' });
+    }
+}
+
+function closeCommandPalette() {
+    ui.elements.commandPaletteModal.classList.remove('show');
+}
+
+async function openCommandPalette() {
+    ui.elements.commandPaletteModal.classList.add('show');
+    
+    // Focus strategies: immediate + delayed to catch after transition
+    ui.elements.commandPaletteInput.value = '';
+    ui.elements.commandPaletteInput.focus();
+    
+    // Fallback for slower transitions (CSS might hold it invisible for a frame)
+    setTimeout(() => {
+        ui.elements.commandPaletteInput.focus();
+    }, 50);
+    
+    // Load all notes
+    allPaletteNotes = await noteManager.listAllNotes();
+    filteredPaletteNotes = allPaletteNotes;
+    commandPaletteSelectedIndex = 0;
+    renderCommandPaletteResults(filteredPaletteNotes);
+}
+
+// Event listeners for Command Palette Input
+ui.elements.commandPaletteInput.addEventListener('input', (e) => {
+    const query = (e.target as HTMLInputElement).value.toLowerCase();
+    
+    if (!query) {
+        filteredPaletteNotes = allPaletteNotes;
+    } else {
+        // Reuse fuzzy search score logic or simple includes for now?
+        // Simple includes for speed as requested in initial MVP
+        filteredPaletteNotes = allPaletteNotes.filter(note => 
+            note.title.toLowerCase().includes(query)
+        );
+    }
+    
+    commandPaletteSelectedIndex = 0;
+    renderCommandPaletteResults(filteredPaletteNotes);
+});
+
+ui.elements.commandPaletteInput.addEventListener('keydown', (e) => {
+    e.stopPropagation(); // Prevent bubbling to document
+    
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        commandPaletteSelectedIndex = (commandPaletteSelectedIndex + 1) % filteredPaletteNotes.length;
+        renderCommandPaletteResults(filteredPaletteNotes);
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        commandPaletteSelectedIndex = (commandPaletteSelectedIndex - 1 + filteredPaletteNotes.length) % filteredPaletteNotes.length;
+        renderCommandPaletteResults(filteredPaletteNotes);
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (filteredPaletteNotes[commandPaletteSelectedIndex]) {
+            const note = filteredPaletteNotes[commandPaletteSelectedIndex];
+            loadNote(note.id, note.folder);
+            closeCommandPalette();
+        }
+    } else if (e.key === 'Escape') {
+        e.preventDefault();
+        closeCommandPalette();
+    }
+});
+
+ui.elements.commandPaletteClose.addEventListener('click', closeCommandPalette);
+
+// Register Ctrl+P
+shortcutManager.registerCtrl('p', (e) => {
+    e.preventDefault();
+    openCommandPalette();
+});
+
+// Sort Handler - Custom Dropdown
+const sortTrigger = ui.elements.sortTrigger;
+const sortMenu = ui.elements.sortMenu;
+
+sortTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    sortMenu.classList.toggle('show');
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    if (!sortMenu.contains(e.target as Node) && !sortTrigger.contains(e.target as Node)) {
+        sortMenu.classList.remove('show');
+    }
+});
+
+// Handle Sort Selection
+sortMenu.querySelectorAll('.dropdown-item').forEach(item => {
+    item.addEventListener('click', () => {
+        const order = (item as HTMLElement).dataset.value;
+        if (order) {
+            noteManager.setSortOrder(order as any);
+            
+            // Update UI
+            sortMenu.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            
+            sortMenu.classList.remove('show');
+            refreshNotes();
+        }
+    });
+});
+
+
+// Sidebar Focus Shortcut
+shortcutManager.register('ctrl+shift+e', (e) => {
+    e.preventDefault();
+    if (ui.elements.sidebar.classList.contains('collapsed')) {
+        document.getElementById('toggle-sidebar-btn')?.click();
+    }
+    ui.elements.searchInput.focus();
+});
+
 // Initialization
 async function init() {
+    // Sync Sort UI
+    if (noteManager.sortOrder) {
+        sortMenu.querySelectorAll('.dropdown-item').forEach(item => {
+            if ((item as HTMLElement).dataset.value === noteManager.sortOrder) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+    
     await refreshFolders();
     await refreshNotes();
     

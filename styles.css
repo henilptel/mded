@@ -657,6 +657,23 @@ body {
   text-decoration: underline;
 }
 
+#command-palette-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 16px 20px;
+  font-size: 16px;
+  color: var(--text-primary);
+  outline: none;
+}
+
+#command-palette-results {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
 .preview blockquote {
   border-left: 2px solid rgba(255, 255, 255, 0.2);
   padding: 10px 14px;
@@ -1190,3 +1207,122 @@ kbd {
     font-size: 16px;
   }
 }
+
+/* Keyboard Navigation Focus */
+.note-item.focused {
+  background: var(--gaze-hover);
+  border-color: var(--accent-blue-glow);
+  outline: 1px solid var(--accent-blue-glow);
+}
+
+/* Sort Options UI */
+.search-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.search-input {
+  flex: 1;
+}
+
+.sort-wrapper {
+  position: relative;
+  /* width: 32px;  Let it size by content if needed, but here it's icon only */
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sort-trigger-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.sort-trigger-btn:hover,
+.sort-trigger-btn.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  width: 200px;
+  background: rgba(30, 30, 30, 0.85); /* Fallback */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 6px;
+  z-index: 1000;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  display: none;
+  flex-direction: column;
+}
+
+.dropdown-menu.show {
+  display: flex;
+  animation: dropdownFadeIn 0.2s ease;
+}
+
+@keyframes dropdownFadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-item {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.dropdown-item.active {
+  background: rgba(var(--accent-blue-rgb), 0.15);
+  color: var(--accent-blue);
+  font-weight: 500;
+}
+
+
+/* Pinned Notes */
+.note-item.pinned {
+  border-left: 2px solid var(--accent-blue);
+  background: rgba(var(--accent-blue-rgb), 0.05);
+}
+
+.pin-indicator {
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent-blue);
+  margin-left: 6px;
+  opacity: 0.8;
+}
+
+.note-actions .btn-icon-sm.active {
+  color: var(--accent-blue);
+  opacity: 1;
+}
+
