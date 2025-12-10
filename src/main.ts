@@ -203,7 +203,7 @@ if (!gotTheLock) {
       
       const filePath = commandLine.find(arg => arg.endsWith('.md') && !arg.startsWith('-'));
       if (filePath) {
-        mainWindow.webContents.send('open-file', filePath);
+        mainWindow.webContents.send('open-file', path.resolve(filePath));
       }
     }
   });
@@ -859,11 +859,26 @@ ipcMain.handle('get-assets-path', () => {
 
 ipcMain.handle('read-external-file', async (_event, filePath: string) => {
   try {
+    if (!filePath || typeof filePath !== 'string') {
+      return { success: false, error: 'Invalid file path' };
+    }
+    
     if (!filePath.endsWith('.md')) {
       return { success: false, error: 'Not a markdown file' };
     }
     
     const resolvedPath = path.resolve(filePath);
+    
+    if (resolvedPath.includes('\0')) {
+      return { success: false, error: 'Invalid file path' };
+    }
+    
+    try {
+      await fs.access(resolvedPath, fsSync.constants.R_OK);
+    } catch {
+      return { success: false, error: 'File not accessible' };
+    }
+    
     const content = await fs.readFile(resolvedPath, 'utf-8');
     const fileName = path.basename(resolvedPath);
     
@@ -885,36 +900,50 @@ const AUTOSTART_DIR = path.join(os.homedir(), '.config', 'autostart');
 const AUTOSTART_FILE = path.join(AUTOSTART_DIR, 'mded.desktop');
 
 ipcMain.handle('get-auto-start', () => {
-  return config.autoStartOnBoot;
+  if (process.platform === 'linux') {
+    return config.autoStartOnBoot;
+  }
+  return app.getLoginItemSettings().openAtLogin;
 });
 
 ipcMain.handle('set-auto-start', async (_event, enabled: boolean) => {
   try {
-    if (enabled) {
-      if (!fsSync.existsSync(AUTOSTART_DIR)) {
-        await fs.mkdir(AUTOSTART_DIR, { recursive: true });
-      }
-      
-      const desktopContent = `[Desktop Entry]
+    if (process.platform === 'linux') {
+      if (enabled) {
+        if (!fsSync.existsSync(AUTOSTART_DIR)) {
+          await fs.mkdir(AUTOSTART_DIR, { recursive: true });
+        }
+        
+        const appPath = app.getAppPath();
+        const execPath = process.execPath;
+        const iconPath = path.join(appPath, 'build', 'icon.png');
+        
+        const desktopContent = `[Desktop Entry]
 Type=Application
 Name=MDed
 Comment=Minimalistic Markdown Editor
-Exec=/home/real/projects/mded/run.sh --hidden
-Icon=/home/real/projects/mded/build/icon.png
+Exec="${execPath}" "${appPath}" --hidden
+Icon=${iconPath}
 Terminal=false
 Categories=Utility;TextEditor;
 StartupWMClass=mded
 X-GNOME-Autostart-enabled=true
 `;
-      await fs.writeFile(AUTOSTART_FILE, desktopContent, 'utf-8');
-    } else {
-      if (fsSync.existsSync(AUTOSTART_FILE)) {
-        await fs.unlink(AUTOSTART_FILE);
+        await fs.writeFile(AUTOSTART_FILE, desktopContent, 'utf-8');
+      } else {
+        if (fsSync.existsSync(AUTOSTART_FILE)) {
+          await fs.unlink(AUTOSTART_FILE);
+        }
       }
+      
+      config.autoStartOnBoot = enabled;
+      scheduleSaveConfig();
+    } else {
+      app.setLoginItemSettings({
+        openAtLogin: enabled,
+        args: ['--hidden']
+      });
     }
-    
-    config.autoStartOnBoot = enabled;
-    scheduleSaveConfig();
     
     return { success: true };
   } catch (error) {

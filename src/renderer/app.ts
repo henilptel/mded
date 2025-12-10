@@ -112,6 +112,15 @@ async function closeTab(index: number) {
       await noteManager.saveNote(tab.id, tab.content, tab.folder);
     } catch (err) {
       console.error('Failed to save tab before closing:', err);
+      const decision = await showSaveErrorModal(
+        `Failed to save "${tab.title}". What would you like to do?`
+      );
+      if (decision === 'retry') {
+        return closeTab(index);
+      } else if (decision === 'cancel') {
+        return;
+      }
+      // decision === 'discard' - fall through to close without saving
     }
   }
   
@@ -122,19 +131,40 @@ async function closeTab(index: number) {
     editorManager.clear();
     noteManager.setCurrentNote(null);
   } else if (index < activeTabIndex) {
-    // Closed tab was before active tab - just decrement index, no editor change needed
     activeTabIndex--;
   } else if (index === activeTabIndex) {
-    // Closed tab was the active tab - need to switch to a new tab
     activeTabIndex = Math.min(activeTabIndex, openTabs.length - 1);
     const newTab = openTabs[activeTabIndex];
     editorManager.setContent(newTab.content);
     noteManager.setCurrentNote(newTab.id, newTab.folder);
   }
-  // If index > activeTabIndex, no changes needed - active tab is unaffected
   
   renderTabs();
   refreshNotes();
+}
+
+function showSaveErrorModal(message: string): Promise<'retry' | 'discard' | 'cancel'> {
+  return new Promise((resolve) => {
+    ui.elements.saveErrorMessage.textContent = message;
+    ui.elements.saveErrorModal.classList.add('show');
+    
+    const cleanup = () => {
+      ui.elements.saveErrorModal.classList.remove('show');
+      ui.elements.saveErrorRetry.removeEventListener('click', handleRetry);
+      ui.elements.saveErrorDiscard.removeEventListener('click', handleDiscard);
+      ui.elements.saveErrorCancel.removeEventListener('click', handleCancel);
+      ui.elements.saveErrorClose.removeEventListener('click', handleCancel);
+    };
+    
+    const handleRetry = () => { cleanup(); resolve('retry'); };
+    const handleDiscard = () => { cleanup(); resolve('discard'); };
+    const handleCancel = () => { cleanup(); resolve('cancel'); };
+    
+    ui.elements.saveErrorRetry.addEventListener('click', handleRetry);
+    ui.elements.saveErrorDiscard.addEventListener('click', handleDiscard);
+    ui.elements.saveErrorCancel.addEventListener('click', handleCancel);
+    ui.elements.saveErrorClose.addEventListener('click', handleCancel);
+  });
 }
 
 function saveCurrentTabContent() {
@@ -248,8 +278,7 @@ function renderNotes(notes: NoteInfo[]) {
           });
       },
       onDelete: async (id, folder) => {
-          const confirmed = confirm(`Delete note?`);
-          if (confirmed) {
+          showConfirmModal(`Delete note?`, async () => {
               await noteManager.deleteNote(id, folder);
               ui.showToast('Note deleted', 'success');
               
@@ -263,7 +292,7 @@ function renderNotes(notes: NoteInfo[]) {
               
               window.electron.saveLastNote(null, null);
               await refreshNotes();
-          }
+          });
       },
       onDragStart: (id, folder) => {
           // Drag state handled in UI
@@ -432,11 +461,10 @@ async function saveCurrentNote() {
     if (result.success) {
         ui.updateSaveIndicator('saved');
         markCurrentTabSaved();
-        editorManager.setContent(tab.content);
     } else {
         if (result.error && (result.error.includes('ENOENT') || result.error.includes('no such file'))) {
             noteManager.setCurrentNote(null);
-            closeTab(activeTabIndex);
+            await closeTab(activeTabIndex);
             ui.updateSaveIndicator('saved');
         } else {
             ui.updateSaveIndicator('error', result.error);
@@ -868,7 +896,9 @@ async function init() {
     window.electron.onOpenFile(async (filePath) => {
         const result = await window.electron.readExternalFile(filePath);
         if (result.success && result.content !== undefined) {
-            editorManager.setContent(result.content);
+            const externalId = `external:${result.filePath || filePath}`;
+            const title = result.fileName || 'External File';
+            openTab(externalId, '', title, result.content);
             ui.showToast(`Opened: ${result.fileName}`);
         } else {
             ui.showToast(`Failed to open file: ${result.error}`, 'error');

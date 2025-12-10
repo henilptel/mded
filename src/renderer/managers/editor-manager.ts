@@ -337,6 +337,9 @@ export class EditorManager {
               if (!file) continue;
 
               const reader = new FileReader();
+              reader.onerror = () => {
+                  console.error('Failed to read pasted image');
+              };
               reader.onload = async () => {
                   const base64Data = reader.result as string;
                   const result = await (window as any).electron.saveScreenshot(base64Data);
@@ -346,6 +349,8 @@ export class EditorManager {
                       document.execCommand('insertText', false, markdownImg);
                       this.updatePreview();
                       this.onInput?.();
+                  } else {
+                      console.error('Failed to save screenshot:', result.error);
                   }
               };
               reader.readAsDataURL(file);
@@ -366,6 +371,10 @@ export class EditorManager {
   private isTerminalOutput(text: string): boolean {
       const lines = text.split('\n');
       if (lines.length < 2) return false;
+
+      // Early check: if first non-empty line is a Markdown header, not terminal output
+      const firstNonEmpty = lines.find(l => l.trim().length > 0)?.trim() || '';
+      const isMarkdownHeader = /^#{1,6}\s+\S/.test(firstNonEmpty);
 
       const terminalPatterns = [
           /^\$\s+\S+/,
@@ -389,6 +398,9 @@ export class EditorManager {
       const hasErrorPattern = lines.some(line => 
           terminalPatterns.slice(6).some(pattern => pattern.test(line.trim()))
       );
+
+      // If it looks like a Markdown header and no error patterns, exclude it
+      if (isMarkdownHeader && !hasErrorPattern) return false;
 
       if (hasPromptLine || hasErrorPattern) return true;
 

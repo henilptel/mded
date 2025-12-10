@@ -35,6 +35,14 @@ export class UIManager {
     confirmCancel: document.getElementById('confirm-cancel') as HTMLButtonElement,
     confirmClose: document.getElementById('confirm-close') as HTMLButtonElement,
 
+    // Save Error Modal
+    saveErrorModal: document.getElementById('save-error-modal') as HTMLDivElement,
+    saveErrorMessage: document.getElementById('save-error-message') as HTMLParagraphElement,
+    saveErrorRetry: document.getElementById('save-error-retry') as HTMLButtonElement,
+    saveErrorDiscard: document.getElementById('save-error-discard') as HTMLButtonElement,
+    saveErrorCancel: document.getElementById('save-error-cancel') as HTMLButtonElement,
+    saveErrorClose: document.getElementById('save-error-close') as HTMLButtonElement,
+
     // Command Palette
     commandPaletteModal: document.getElementById('command-palette-modal') as HTMLDivElement,
     commandPaletteInput: document.getElementById('command-palette-input') as HTMLInputElement,

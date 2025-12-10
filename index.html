@@ -703,6 +703,49 @@
         </div>
       </div>
 
+      <!-- Save Error Modal -->
+      <div class="modal-overlay" id="save-error-modal">
+        <div class="modal glass">
+          <div class="modal-header">
+            <h2 id="save-error-title">Save Failed</h2>
+            <button class="btn-icon-sm" id="save-error-close">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p
+              id="save-error-message"
+              style="margin-bottom: 20px; color: var(--text-secondary)"
+            >
+              Failed to save changes. What would you like to do?
+            </p>
+            <div style="display: flex; justify-content: flex-end; gap: 8px">
+              <button class="btn-toggle" id="save-error-cancel">Cancel</button>
+              <button
+                class="btn-toggle"
+                id="save-error-discard"
+                style="background: rgba(248, 113, 113, 0.2); color: #f87171"
+              >
+                Discard Changes
+              </button>
+              <button class="btn-toggle active" id="save-error-retry">
+                Retry Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Command Palette Modal -->
       <div class="modal-overlay" id="command-palette-modal">
         <div class="modal glass" style="max-width: 600px;">
