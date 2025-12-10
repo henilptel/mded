@@ -20,7 +20,7 @@
     "electron",
     "glassmorphism"
   ],
-  "author": "",
+  "author": "henilptel <henilptel@gmail.com>",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.10.0",
@@ -45,16 +45,25 @@
       "node_modules/**/*"
     ],
     "win": {
-      "target": ["nsis", "portable"],
+      "target": [
+        "nsis",
+        "portable"
+      ],
       "icon": "build/icon.png"
     },
     "mac": {
-      "target": ["dmg", "zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "icon": "build/icon.png",
       "category": "public.app-category.productivity"
     },
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "category": "Utility",
       "icon": "build/icon.png"
     },
