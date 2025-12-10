@@ -1,6 +1,6 @@
 {
   "name": "mded",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Minimalistic Markdown Editor with VisionOS glassmorphism design",
   "main": "dist/main.js",
   "scripts": {
