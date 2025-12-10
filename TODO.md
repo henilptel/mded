@@ -53,16 +53,14 @@
 
 ## 🟣 P5: System Integration
 
-- [ ] Screenshot to Note - Paste screenshots directly into notes (save to assets folder, embed as markdown)
-- [ ] Terminal Command Capture - Detect terminal command + output format when pasting
-- [ ] Open With MDed - Register as handler for .md files so double-click opens in MDed
-- [ ] Auto-Start on Boot - Option to launch MDed on system startup (hidden to tray)
+- [x] Screenshot to Note - Paste screenshots directly into notes (save to assets folder, embed as markdown)
+- [x] Terminal Command Capture - Detect terminal command + output format when pasting
+- [x] Open With MDed - Register as handler for .md files so double-click opens in MDed
+- [x] Auto-Start on Boot - Option to launch MDed on system startup (hidden to tray)
 
 ---
 
 ## ⚪ P6: Future / Nice-to-Have
 
-- [ ] Settings Panel/Modal - Dedicated settings UI instead of just shortcuts modal
+- [ ] Settings Panel/Modal - Refactor the display settings and icons to settings. Add more settings
 - [ ] Clipboard History Panel - Show last 10 clipboard items in sidebar, click to paste
-- [ ] Copy for Slack/Discord - Format markdown appropriately for chat apps
-- [ ] Browser Extension: Quick Capture - Browser extension adds "Save to MDed" on right-click

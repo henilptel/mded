@@ -9,6 +9,7 @@ let mainWindow: BrowserWindow | null = null;
 let quickNoteWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
+let fileToOpen: string | null = null;
 
 /**
  * Validates that a file or folder name is safe and does not contain path traversal characters.
@@ -32,10 +33,16 @@ function validatePath(baseDir: string, relativePath: string): string {
 }
 
 const NOTES_DIR = path.join(os.homedir(), '.mded', 'notes');
+const ASSETS_DIR = path.join(os.homedir(), '.mded', 'assets');
 
 // Ensure notes directory exists
 if (!fsSync.existsSync(NOTES_DIR)) {
   fsSync.mkdirSync(NOTES_DIR, { recursive: true });
+}
+
+// Ensure assets directory exists
+if (!fsSync.existsSync(ASSETS_DIR)) {
+  fsSync.mkdirSync(ASSETS_DIR, { recursive: true });
 }
 
 const CONFIG_FILE = path.join(os.homedir(), '.mded', 'config.json');
@@ -48,7 +55,8 @@ let config: any = {
   lastFolder: null as string | null,
   pinnedNotes: [] as string[],
   minimalModeBounds: { width: 400, height: 300 } as { width: number, height: number, x?: number, y?: number },
-  windowOpacity: 1.0
+  windowOpacity: 1.0,
+  autoStartOnBoot: false
 };
 
 function loadConfig() {
@@ -139,12 +147,24 @@ function createWindow(): void {
         `document.documentElement.style.setProperty('--window-opacity', '${config.windowOpacity}')`
       );
     }
+    
+    if (fileToOpen) {
+      mainWindow?.webContents.send('open-file', fileToOpen);
+      fileToOpen = null;
+    }
   });
 
   mainWindow.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault();
       mainWindow?.hide();
+    }
+  });
+
+  // Prevent maximizing while in minimal mode
+  mainWindow.on('maximize', () => {
+    if (isInMinimalMode) {
+      mainWindow?.unmaximize();
     }
   });
 }
@@ -175,17 +195,34 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
 } else {
-  app.on('second-instance', () => {
+  app.on('second-instance', (_event, commandLine) => {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       if (!mainWindow.isVisible()) mainWindow.show();
       mainWindow.focus();
+      
+      const filePath = commandLine.find(arg => arg.endsWith('.md') && !arg.startsWith('-'));
+      if (filePath) {
+        mainWindow.webContents.send('open-file', path.resolve(filePath));
+      }
     }
   });
 
   app.whenReady().then(() => {
+    const args = process.argv.slice(1);
+    const mdFile = args.find(arg => arg.endsWith('.md') && !arg.startsWith('-'));
+    if (mdFile) {
+      fileToOpen = path.resolve(mdFile);
+    }
+    
+    const startHidden = args.includes('--hidden');
+    
     createWindow();
     createTray();
+    
+    if (startHidden && mainWindow) {
+      mainWindow.hide();
+    }
     
     // Global hotkey to show/focus window (Ctrl+Shift+N)
     // Register global shortcut
@@ -618,6 +655,10 @@ ipcMain.on('minimize-window', () => {
 });
 
 ipcMain.on('maximize-window', () => {
+  // Don't allow maximize in minimal mode
+  if (isInMinimalMode) {
+    return;
+  }
   if (mainWindow?.isMaximized()) {
     mainWindow.unmaximize();
   } else {
@@ -697,7 +738,9 @@ ipcMain.handle('enter-minimal-mode', async () => {
   isInMinimalMode = true;
   
   // Use saved minimal bounds or defaults (small window)
-  const { width, height, x, y } = config.minimalModeBounds || { width: 400, height: 300 };
+  const savedBounds = config.minimalModeBounds || {};
+  const width = savedBounds.width || 400;
+  const height = savedBounds.height || 300;
   
   // Set minimum size for minimal mode
   mainWindow.setMinimumSize(200, 150);
@@ -707,12 +750,17 @@ ipcMain.handle('enter-minimal-mode', async () => {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width: screenWidth, height: screenHeight, x: screenX, y: screenY } = primaryDisplay.workArea;
   
-  const newX = x !== undefined ? x : screenX + Math.round((screenWidth - width) / 2);
-  const newY = y !== undefined ? y : screenY + Math.round((screenHeight - height) / 2);
+  const newX = savedBounds.x !== undefined ? savedBounds.x : screenX + Math.round((screenWidth - width) / 2);
+  const newY = savedBounds.y !== undefined ? savedBounds.y : screenY + Math.round((screenHeight - height) / 2);
+  
+  // Unmaximize first if window is maximized
+  if (mainWindow.isMaximized()) {
+    mainWindow.unmaximize();
+  }
   
   mainWindow.setBounds({
-    width: width || 400,
-    height: height || 300,
+    width,
+    height,
     x: newX,
     y: newY
   });
@@ -780,49 +828,126 @@ ipcMain.handle('set-window-opacity', async (_event, opacity: number) => {
   return { success: true, opacity: clampedOpacity };
 });
 
-ipcMain.handle('snap-to-corner', async (_event, corner: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right') => {
-  if (!mainWindow) return { success: false };
-  
-  if (mainWindow.isMaximized()) {
-    mainWindow.unmaximize();
-  }
-  
-  const { screen } = require('electron');
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const { width: screenWidth, height: screenHeight, x: screenX, y: screenY } = primaryDisplay.workArea;
-  
-  const bounds = mainWindow.getBounds();
-  const padding = 20;
-  
-  let newX = screenX;
-  let newY = screenY;
-  
-  switch (corner) {
-    case 'top-left':
-      newX = screenX + padding;
-      newY = screenY + padding;
-      break;
-    case 'top-right':
-      newX = screenX + screenWidth - bounds.width - padding;
-      newY = screenY + padding;
-      break;
-    case 'bottom-left':
-      newX = screenX + padding;
-      newY = screenY + screenHeight - bounds.height - padding;
-      break;
-    case 'bottom-right':
-      newX = screenX + screenWidth - bounds.width - padding;
-      newY = screenY + screenHeight - bounds.height - padding;
-      break;
-  }
-  
-  mainWindow.setBounds({ x: newX, y: newY, width: bounds.width, height: bounds.height });
-  
-  return { success: true };
-});
-
 ipcMain.handle('get-display-info', async () => {
   const { screen } = require('electron');
   const primaryDisplay = screen.getPrimaryDisplay();
   return primaryDisplay.workArea;
+});
+
+// ============ P5: System Integration ============
+
+ipcMain.handle('save-screenshot', async (_event, base64Data: string) => {
+  try {
+    const imageId = `screenshot-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.png`;
+    const imagePath = path.join(ASSETS_DIR, imageId);
+    
+    const base64Image = base64Data.replace(/^data:image\/\w+;base64,/, '');
+    const buffer = Buffer.from(base64Image, 'base64');
+    
+    await fs.writeFile(imagePath, buffer);
+    
+    return { success: true, imagePath: imagePath, imageId: imageId };
+  } catch (error) {
+    console.error('Error saving screenshot:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle('get-assets-path', () => {
+  return ASSETS_DIR;
+});
+
+ipcMain.handle('read-external-file', async (_event, filePath: string) => {
+  try {
+    if (!filePath || typeof filePath !== 'string') {
+      return { success: false, error: 'Invalid file path' };
+    }
+    
+    if (!filePath.endsWith('.md')) {
+      return { success: false, error: 'Not a markdown file' };
+    }
+    
+    const resolvedPath = path.resolve(filePath);
+    
+    if (resolvedPath.includes('\0')) {
+      return { success: false, error: 'Invalid file path' };
+    }
+    
+    try {
+      await fs.access(resolvedPath, fsSync.constants.R_OK);
+    } catch {
+      return { success: false, error: 'File not accessible' };
+    }
+    
+    const content = await fs.readFile(resolvedPath, 'utf-8');
+    const fileName = path.basename(resolvedPath);
+    
+    return { 
+      success: true, 
+      content, 
+      fileName,
+      filePath: resolvedPath
+    };
+  } catch (error) {
+    console.error('Error reading external file:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+// ============ Auto-Start on Boot ============
+
+const AUTOSTART_DIR = path.join(os.homedir(), '.config', 'autostart');
+const AUTOSTART_FILE = path.join(AUTOSTART_DIR, 'mded.desktop');
+
+ipcMain.handle('get-auto-start', () => {
+  if (process.platform === 'linux') {
+    return config.autoStartOnBoot;
+  }
+  return app.getLoginItemSettings().openAtLogin;
+});
+
+ipcMain.handle('set-auto-start', async (_event, enabled: boolean) => {
+  try {
+    if (process.platform === 'linux') {
+      if (enabled) {
+        if (!fsSync.existsSync(AUTOSTART_DIR)) {
+          await fs.mkdir(AUTOSTART_DIR, { recursive: true });
+        }
+        
+        const appPath = app.getAppPath();
+        const execPath = process.execPath;
+        const iconPath = path.join(appPath, 'build', 'icon.png');
+        
+        const desktopContent = `[Desktop Entry]
+Type=Application
+Name=MDed
+Comment=Minimalistic Markdown Editor
+Exec="${execPath}" "${appPath}" --hidden
+Icon=${iconPath}
+Terminal=false
+Categories=Utility;TextEditor;
+StartupWMClass=mded
+X-GNOME-Autostart-enabled=true
+`;
+        await fs.writeFile(AUTOSTART_FILE, desktopContent, 'utf-8');
+      } else {
+        if (fsSync.existsSync(AUTOSTART_FILE)) {
+          await fs.unlink(AUTOSTART_FILE);
+        }
+      }
+      
+      config.autoStartOnBoot = enabled;
+      scheduleSaveConfig();
+    } else {
+      app.setLoginItemSettings({
+        openAtLogin: enabled,
+        args: ['--hidden']
+      });
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error setting auto-start:', error);
+    return { success: false, error: String(error) };
+  }
 });

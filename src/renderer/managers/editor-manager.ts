@@ -101,9 +101,9 @@ export class EditorManager {
               const isChecked = match[0].includes('x') || match[0].includes('X');
               const newStr = isChecked ? '- [ ]' : '- [x]';
               
-              this.editor.value = content.substring(0, match.index) + 
-                                  newStr + 
-                                  content.substring(match.index + match[0].length);
+              this.editor.focus();
+              this.editor.setSelectionRange(match.index, match.index + match[0].length);
+              document.execCommand('insertText', false, newStr);
               
               this.updatePreview();
               this.onInput?.();
@@ -125,8 +125,11 @@ export class EditorManager {
     const selectedText = this.editor.value.substring(start, end);
     const newText = before + selectedText + after;
     
-    this.editor.value = this.editor.value.substring(0, start) + newText + this.editor.value.substring(end);
     this.editor.focus();
+    this.editor.setSelectionRange(start, end);
+    document.execCommand('insertText', false, newText);
+    
+    // Position cursor inside the inserted text
     this.editor.selectionStart = start + before.length;
     this.editor.selectionEnd = start + before.length + selectedText.length;
     
@@ -143,8 +146,9 @@ export class EditorManager {
     const line = this.editor.value.substring(lineStart, end);
     const newLine = line.startsWith(prefix) ? line.substring(prefix.length) : prefix + line;
     
-    this.editor.value = this.editor.value.substring(0, lineStart) + newLine + this.editor.value.substring(end);
     this.editor.focus();
+    this.editor.setSelectionRange(lineStart, end);
+    document.execCommand('insertText', false, newLine);
     
     this.updatePreview();
     this.onInput?.();
@@ -201,13 +205,17 @@ export class EditorManager {
     });
 
     this.editor.addEventListener('keydown', (e) => {
-        if (e.key === 'Tab') {
+        if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey) {
             this.handleTab(e);
         } else if (e.key === 'Enter') {
             this.handleEnter(e);
         } else if (['(', '[', '{', '*', '`', '"', "'"].includes(e.key)) {
             this.handleAutoPair(e);
         }
+    });
+
+    this.editor.addEventListener('paste', (e) => {
+        this.handlePaste(e);
     });
 
     // Delegated click listener for checkboxes
@@ -254,8 +262,9 @@ export class EditorManager {
           if (!rest.trim()) {
               // Empty list item -> Exit list
               e.preventDefault();
-              // Remove the specific line content
-              this.editor.setRangeText('', lineStart, start, 'end');
+              // Remove the specific line content using execCommand
+              this.editor.setSelectionRange(lineStart, start);
+              document.execCommand('delete');
           } else {
               // Continue list
               e.preventDefault();
@@ -311,5 +320,124 @@ export class EditorManager {
       
       this.onInput?.();
       this.updatePreview();
+  }
+
+  private async handlePaste(e: ClipboardEvent) {
+      const clipboardData = e.clipboardData;
+      if (!clipboardData) return;
+
+      const items = clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          
+          if (item.type.startsWith('image/')) {
+              e.preventDefault();
+              
+              const file = item.getAsFile();
+              if (!file) continue;
+
+              const reader = new FileReader();
+              reader.onerror = () => {
+                  console.error('Failed to read pasted image');
+              };
+              reader.onload = async () => {
+                  const base64Data = reader.result as string;
+                  const result = await (window as any).electron.saveScreenshot(base64Data);
+                  
+                  if (result.success && result.imagePath) {
+                      const markdownImg = `![screenshot](${result.imagePath})\n`;
+                      document.execCommand('insertText', false, markdownImg);
+                      this.updatePreview();
+                      this.onInput?.();
+                  } else {
+                      console.error('Failed to save screenshot:', result.error);
+                  }
+              };
+              reader.readAsDataURL(file);
+              return;
+          }
+      }
+
+      const text = clipboardData.getData('text/plain');
+      if (text && this.isTerminalOutput(text)) {
+          e.preventDefault();
+          const formattedOutput = this.formatTerminalOutput(text);
+          document.execCommand('insertText', false, formattedOutput);
+          this.updatePreview();
+          this.onInput?.();
+      }
+  }
+
+  private isTerminalOutput(text: string): boolean {
+      const lines = text.split('\n');
+      if (lines.length < 2) return false;
+
+      // Early check: if first non-empty line is a Markdown header, not terminal output
+      const firstNonEmpty = lines.find(l => l.trim().length > 0)?.trim() || '';
+      const isMarkdownHeader = /^#{1,6}\s+\S/.test(firstNonEmpty);
+
+      const terminalPatterns = [
+          /^\$\s+\S+/,
+          /^>\s+\S+/,
+          /^%\s+\S+/,
+          /^#\s+\S+/,
+          /^\[\w+[@:]/,
+          /^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+[:\$#%]/,
+          /^(npm|yarn|pnpm|node|python|pip|cargo|go|git|docker|kubectl)\s+(ERR!|WARN|error|warning)/i,
+          /^(Error|ERROR|Warning|WARNING|FAIL|PASSED|FAILED):/,
+          /^\s*(at\s+\S+\s+\([^)]+\))/,
+          /^Traceback \(most recent call last\)/,
+          /^>>>?\s+/,
+          /^In \[\d+\]:/,
+      ];
+
+      const hasPromptLine = lines.some(line => 
+          terminalPatterns.slice(0, 6).some(pattern => pattern.test(line.trim()))
+      );
+      
+      const hasErrorPattern = lines.some(line => 
+          terminalPatterns.slice(6).some(pattern => pattern.test(line.trim()))
+      );
+
+      // If it looks like a Markdown header and no error patterns, exclude it
+      if (isMarkdownHeader && !hasErrorPattern) return false;
+
+      if (hasPromptLine || hasErrorPattern) return true;
+
+      const hasIndentedOutput = lines.filter(l => l.startsWith('  ') || l.startsWith('\t')).length > lines.length * 0.3;
+      const hasAnsiCodes = /\x1b\[[0-9;]*m/.test(text);
+      
+      return hasIndentedOutput || hasAnsiCodes;
+  }
+
+  private formatTerminalOutput(text: string): string {
+      const cleanText = text.replace(/\x1b\[[0-9;]*m/g, '');
+      
+      const lines = cleanText.split('\n');
+      const firstLine = lines[0].trim();
+      
+      const promptPatterns = [
+          /^\$\s+(.+)$/,
+          /^>\s+(.+)$/,
+          /^%\s+(.+)$/,
+          /^#\s+(.+)$/,
+          /^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+[:\$#%]\s*(.+)$/,
+      ];
+      
+      let command = '';
+      for (const pattern of promptPatterns) {
+          const match = firstLine.match(pattern);
+          if (match) {
+              command = match[1];
+              break;
+          }
+      }
+      
+      if (command) {
+          const output = lines.slice(1).join('\n').trim();
+          return `\`\`\`bash\n$ ${command}\n${output}\n\`\`\`\n`;
+      }
+      
+      return `\`\`\`\n${cleanText.trim()}\n\`\`\`\n`;
   }
 }

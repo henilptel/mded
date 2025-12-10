@@ -296,6 +296,100 @@ body {
   color: var(--text-primary);
 }
 
+/* ============ Tabs Bar ============ */
+.tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  background: var(--glass-bg-darker);
+  border-bottom: var(--rim-border);
+}
+
+.tabs-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.tabs-bar:empty,
+.tabs-bar.hidden {
+  display: none;
+}
+
+.tab-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--gaze-idle);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 450;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-smooth);
+  max-width: 180px;
+  white-space: nowrap;
+  position: relative;
+}
+
+.tab-item:hover {
+  background: var(--gaze-hover);
+  color: var(--text-secondary);
+}
+
+.tab-item.active {
+  background: var(--gaze-active);
+  color: var(--text-primary);
+  box-shadow: var(--rim-highlight);
+}
+
+.tab-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  text-align: left;
+}
+
+.tab-close {
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-quaternary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  transition: all 0.15s var(--ease-smooth);
+  flex-shrink: 0;
+}
+
+.tab-item:hover .tab-close {
+  opacity: 1;
+}
+
+.tab-close:hover {
+  background: var(--gaze-hover);
+  color: var(--text-secondary);
+}
+
+.tab-item.modified .tab-title::after {
+  content: ' •';
+  color: var(--accent-blue);
+}
+
+/* Hide tabs in minimal mode */
+.app.minimal-mode .tabs-bar {
+  display: none;
+}
+
 /* ============ Buttons ============ */
 .btn-icon {
   width: 32px;
@@ -821,9 +915,9 @@ body {
   width: 28px;
   height: 28px;
   border: none;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.4);
   border-radius: 6px;
-  color: var(--text-tertiary);
+  color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
   display: none;
   align-items: center;
@@ -834,8 +928,8 @@ body {
 }
 
 .exit-minimal-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
 }
 
 .app.minimal-mode .exit-minimal-btn {
@@ -1594,6 +1688,70 @@ kbd {
 .keyboard-shortcuts .shortcut span {
   font-size: 11px;
   color: var(--text-secondary);
+}
+
+/* ============ Toggle Switch ============ */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.toggle-label-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  transition: all 0.3s var(--ease-smooth);
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--text-tertiary);
+  border-radius: 50%;
+  transition: all 0.3s var(--ease-smooth);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: var(--accent-blue);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(20px);
+  background-color: white;
+}
+
+.toggle-switch input:focus + .toggle-slider {
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.3);
 }
 
 /* ============ Accessibility ============ */

@@ -207,6 +207,11 @@
         </div>
 
         <div class="editor-container">
+          <!-- Tabs Bar -->
+          <div class="tabs-bar" id="tabs-bar">
+            <!-- Tabs will be dynamically added here -->
+          </div>
+
           <div class="editor-header glass">
             <div class="toolbar">
               <button
@@ -410,13 +415,8 @@
                 </svg>
               </button>
             </div>
+
             <div class="editor-actions">
-              <button class="btn-toggle" id="split-view-btn" title="Split View">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                  <line x1="12" y1="3" x2="12" y2="21"></line>
-                </svg>
-              </button>
               <button class="btn-toggle" id="toggle-preview">
                 <span class="toggle-label" id="mode-label">Preview</span>
               </button>
@@ -525,14 +525,31 @@
                 <kbd>Ctrl</kbd>+<kbd>N</kbd><span>New note</span>
               </div>
               <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>P</kbd><span>Command palette</span>
+              </div>
+              <div class="shortcut-row">
                 <kbd>Ctrl</kbd>+<kbd>E</kbd><span>Toggle preview</span>
               </div>
               <div class="shortcut-row">
                 <kbd>Ctrl</kbd>+<kbd>/</kbd><span>Show shortcuts</span>
               </div>
               <div class="shortcut-row">
-                <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd
-                ><span>Global: Show app</span>
+                <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd><span>Focus sidebar</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Escape</kbd><span>Close modals</span>
+              </div>
+            </div>
+            <div class="shortcut-section">
+              <h3>Tabs</h3>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>Tab</kbd><span>Next tab</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Tab</kbd><span>Previous tab</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>W</kbd><span>Close tab</span>
               </div>
             </div>
             <div class="shortcut-section">
@@ -545,6 +562,27 @@
               </div>
               <div class="shortcut-row">
                 <kbd>Ctrl</kbd>+<kbd>K</kbd><span>Link</span>
+              </div>
+            </div>
+            <div class="shortcut-section">
+              <h3>Editor</h3>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>D</kbd><span>Duplicate line</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Shift</kbd>+<kbd>Delete</kbd><span>Delete line</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>=</kbd><span>Increase font</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>-</kbd><span>Decrease font</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Tab</kbd><span>Indent / list</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Shift</kbd>+<kbd>Tab</kbd><span>Outdent</span>
               </div>
             </div>
           </div>
@@ -665,6 +703,49 @@
         </div>
       </div>
 
+      <!-- Save Error Modal -->
+      <div class="modal-overlay" id="save-error-modal">
+        <div class="modal glass">
+          <div class="modal-header">
+            <h2 id="save-error-title">Save Failed</h2>
+            <button class="btn-icon-sm" id="save-error-close">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p
+              id="save-error-message"
+              style="margin-bottom: 20px; color: var(--text-secondary)"
+            >
+              Failed to save changes. What would you like to do?
+            </p>
+            <div style="display: flex; justify-content: flex-end; gap: 8px">
+              <button class="btn-toggle" id="save-error-cancel">Cancel</button>
+              <button
+                class="btn-toggle"
+                id="save-error-discard"
+                style="background: rgba(248, 113, 113, 0.2); color: #f87171"
+              >
+                Discard Changes
+              </button>
+              <button class="btn-toggle active" id="save-error-retry">
+                Retry Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Command Palette Modal -->
       <div class="modal-overlay" id="command-palette-modal">
         <div class="modal glass" style="max-width: 600px;">
@@ -713,35 +794,19 @@
                 <span id="opacity-value">100%</span>
               </div>
             </div>
-
-            <!-- Snap to Corner -->
+            
+            <!-- Auto-Start Control -->
             <div class="settings-section">
-              <h3>Snap to Corner</h3>
-              <div class="corner-grid">
-                <button class="corner-btn" data-corner="top-left" title="Top Left">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="8" height="8" rx="1"></rect>
-                    <path d="M3 15v6h6M21 3h-6M21 9v-6"></path>
-                  </svg>
-                </button>
-                <button class="corner-btn" data-corner="top-right" title="Top Right">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="13" y="3" width="8" height="8" rx="1"></rect>
-                    <path d="M3 3h6M3 9V3M21 15v6h-6"></path>
-                  </svg>
-                </button>
-                <button class="corner-btn" data-corner="bottom-left" title="Bottom Left">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="13" width="8" height="8" rx="1"></rect>
-                    <path d="M3 3v6h6M21 21h-6M21 15v6"></path>
-                  </svg>
-                </button>
-                <button class="corner-btn" data-corner="bottom-right" title="Bottom Right">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="13" y="13" width="8" height="8" rx="1"></rect>
-                    <path d="M21 3v6h-6M3 21h6M3 15v6"></path>
-                  </svg>
-                </button>
+              <h3>Startup</h3>
+              <div class="toggle-row">
+                <span class="toggle-label-text">Start MDed on system boot</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="auto-start-toggle" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div style="font-size: 11px; color: var(--text-quaternary); margin-top: 6px;">
+                Launches hidden to tray on startup
               </div>
             </div>
           </div>

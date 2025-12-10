@@ -64,12 +64,20 @@ const electronAPI = {
   saveMinimalBounds: (): Promise<ApiResult> => ipcRenderer.invoke('save-minimal-bounds'),
   getWindowOpacity: (): Promise<number> => ipcRenderer.invoke('get-window-opacity'),
   setWindowOpacity: (opacity: number): Promise<ApiResult & { opacity?: number }> => ipcRenderer.invoke('set-window-opacity', opacity),
-  snapToCorner: (corner: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'): Promise<ApiResult> => 
-    ipcRenderer.invoke('snap-to-corner', corner),
   getDisplayInfo: (): Promise<{ x: number, y: number, width: number, height: number }> => ipcRenderer.invoke('get-display-info'),
   
+  // P5: System Integration
+  saveScreenshot: (base64Data: string): Promise<ApiResult & { imagePath?: string, imageId?: string }> => 
+    ipcRenderer.invoke('save-screenshot', base64Data),
+  getAssetsPath: (): Promise<string> => ipcRenderer.invoke('get-assets-path'),
+  readExternalFile: (filePath: string): Promise<ApiResult & { content?: string, fileName?: string, filePath?: string }> =>
+    ipcRenderer.invoke('read-external-file', filePath),
+  getAutoStart: (): Promise<boolean> => ipcRenderer.invoke('get-auto-start'),
+  setAutoStart: (enabled: boolean): Promise<ApiResult> => ipcRenderer.invoke('set-auto-start', enabled),
+  
   // Events
-  onRefreshNotes: (callback: (noteId?: string) => void) => ipcRenderer.on('refresh-notes', (_event, noteId) => callback(noteId))
+  onRefreshNotes: (callback: (noteId?: string) => void) => ipcRenderer.on('refresh-notes', (_event, noteId) => callback(noteId)),
+  onOpenFile: (callback: (filePath: string) => void) => ipcRenderer.on('open-file', (_event, filePath) => callback(filePath))
 };
 
 contextBridge.exposeInMainWorld('electron', electronAPI);
