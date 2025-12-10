@@ -714,7 +714,6 @@ ipcMain.handle('save-quick-note', async (_event, content: string) => {
       new Notification({ title: 'MDed', body: 'Quick note saved' }).show();
       quickNoteWindow?.hide();
       
-      
        if (mainWindow && mainWindow.isVisible()) {
            mainWindow.webContents.send('refresh-notes', noteId);
        }
@@ -896,12 +895,17 @@ ipcMain.handle('read-external-file', async (_event, filePath: string) => {
 
 // ============ Auto-Start on Boot ============
 
-const AUTOSTART_DIR = path.join(os.homedir(), '.config', 'autostart');
-const AUTOSTART_FILE = path.join(AUTOSTART_DIR, 'mded.desktop');
+function getLinuxAutostartDir(): string {
+  return path.join(os.homedir(), '.config', 'autostart');
+}
+
+function getLinuxAutostartFile(): string {
+  return path.join(getLinuxAutostartDir(), 'mded.desktop');
+}
 
 ipcMain.handle('get-auto-start', () => {
   if (process.platform === 'linux') {
-    return config.autoStartOnBoot;
+    return fsSync.existsSync(getLinuxAutostartFile());
   }
   return app.getLoginItemSettings().openAtLogin;
 });
@@ -909,9 +913,12 @@ ipcMain.handle('get-auto-start', () => {
 ipcMain.handle('set-auto-start', async (_event, enabled: boolean) => {
   try {
     if (process.platform === 'linux') {
+      const autostartDir = getLinuxAutostartDir();
+      const autostartFile = getLinuxAutostartFile();
+      
       if (enabled) {
-        if (!fsSync.existsSync(AUTOSTART_DIR)) {
-          await fs.mkdir(AUTOSTART_DIR, { recursive: true });
+        if (!fsSync.existsSync(autostartDir)) {
+          await fs.mkdir(autostartDir, { recursive: true });
         }
         
         const appPath = app.getAppPath();
@@ -929,19 +936,39 @@ Categories=Utility;TextEditor;
 StartupWMClass=mded
 X-GNOME-Autostart-enabled=true
 `;
-        await fs.writeFile(AUTOSTART_FILE, desktopContent, 'utf-8');
+        await fs.writeFile(autostartFile, desktopContent, 'utf-8');
       } else {
-        if (fsSync.existsSync(AUTOSTART_FILE)) {
-          await fs.unlink(AUTOSTART_FILE);
+        if (fsSync.existsSync(autostartFile)) {
+          await fs.unlink(autostartFile);
         }
       }
       
       config.autoStartOnBoot = enabled;
       scheduleSaveConfig();
-    } else {
+    } else if (process.platform === 'win32') {
+      const appFolder = path.dirname(process.execPath);
+      const exeName = path.basename(process.execPath);
+      const isPackaged = app.isPackaged;
+      
+      if (isPackaged) {
+        // Packaged app - just use the exe
+        app.setLoginItemSettings({
+          openAtLogin: enabled,
+          path: process.execPath,
+          args: ['--hidden']
+        });
+      } else {
+        // Dev mode - need to pass the app path to electron
+        app.setLoginItemSettings({
+          openAtLogin: enabled,
+          path: process.execPath,
+          args: [app.getAppPath(), '--hidden']
+        });
+      }
+    } else if (process.platform === 'darwin') {
       app.setLoginItemSettings({
         openAtLogin: enabled,
-        args: ['--hidden']
+        openAsHidden: true
       });
     }
     
