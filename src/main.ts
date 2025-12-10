@@ -798,47 +798,6 @@ ipcMain.handle('set-window-opacity', async (_event, opacity: number) => {
   return { success: true, opacity: clampedOpacity };
 });
 
-ipcMain.handle('snap-to-corner', async (_event, corner: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right') => {
-  if (!mainWindow) return { success: false };
-  
-  if (mainWindow.isMaximized()) {
-    mainWindow.unmaximize();
-  }
-  
-  const { screen } = require('electron');
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const { width: screenWidth, height: screenHeight, x: screenX, y: screenY } = primaryDisplay.workArea;
-  
-  const bounds = mainWindow.getBounds();
-  const padding = 20;
-  
-  let newX = screenX;
-  let newY = screenY;
-  
-  switch (corner) {
-    case 'top-left':
-      newX = screenX + padding;
-      newY = screenY + padding;
-      break;
-    case 'top-right':
-      newX = screenX + screenWidth - bounds.width - padding;
-      newY = screenY + padding;
-      break;
-    case 'bottom-left':
-      newX = screenX + padding;
-      newY = screenY + screenHeight - bounds.height - padding;
-      break;
-    case 'bottom-right':
-      newX = screenX + screenWidth - bounds.width - padding;
-      newY = screenY + screenHeight - bounds.height - padding;
-      break;
-  }
-  
-  mainWindow.setBounds({ x: newX, y: newY, width: bounds.width, height: bounds.height });
-  
-  return { success: true };
-});
-
 ipcMain.handle('get-display-info', async () => {
   const { screen } = require('electron');
   const primaryDisplay = screen.getPrimaryDisplay();

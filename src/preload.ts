@@ -64,8 +64,6 @@ const electronAPI = {
   saveMinimalBounds: (): Promise<ApiResult> => ipcRenderer.invoke('save-minimal-bounds'),
   getWindowOpacity: (): Promise<number> => ipcRenderer.invoke('get-window-opacity'),
   setWindowOpacity: (opacity: number): Promise<ApiResult & { opacity?: number }> => ipcRenderer.invoke('set-window-opacity', opacity),
-  snapToCorner: (corner: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'): Promise<ApiResult> => 
-    ipcRenderer.invoke('snap-to-corner', corner),
   getDisplayInfo: (): Promise<{ x: number, y: number, width: number, height: number }> => ipcRenderer.invoke('get-display-info'),
   
   // Events

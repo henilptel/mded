@@ -32,12 +32,14 @@ interface Tab {
 let openTabs: Tab[] = [];
 let activeTabIndex = -1;
 
-function getTabsBar(): HTMLElement {
-  return document.getElementById('tabs-bar') as HTMLElement;
+function getTabsBar(): HTMLElement | null {
+  return document.getElementById('tabs-bar');
 }
 
 function renderTabs() {
   const tabsBar = getTabsBar();
+  if (!tabsBar) return;
+  
   tabsBar.innerHTML = '';
   
   if (openTabs.length === 0) {
@@ -101,12 +103,16 @@ function switchToTab(index: number) {
   refreshNotes();
 }
 
-function closeTab(index: number) {
+async function closeTab(index: number) {
   if (index < 0 || index >= openTabs.length) return;
   
   const tab = openTabs[index];
   if (tab.modified) {
-    noteManager.saveNote(tab.id, tab.content, tab.folder);
+    try {
+      await noteManager.saveNote(tab.id, tab.content, tab.folder);
+    } catch (err) {
+      console.error('Failed to save tab before closing:', err);
+    }
   }
   
   openTabs.splice(index, 1);
@@ -115,12 +121,17 @@ function closeTab(index: number) {
     activeTabIndex = -1;
     editorManager.clear();
     noteManager.setCurrentNote(null);
-  } else if (index <= activeTabIndex) {
-    activeTabIndex = Math.max(0, activeTabIndex - 1);
+  } else if (index < activeTabIndex) {
+    // Closed tab was before active tab - just decrement index, no editor change needed
+    activeTabIndex--;
+  } else if (index === activeTabIndex) {
+    // Closed tab was the active tab - need to switch to a new tab
+    activeTabIndex = Math.min(activeTabIndex, openTabs.length - 1);
     const newTab = openTabs[activeTabIndex];
     editorManager.setContent(newTab.content);
     noteManager.setCurrentNote(newTab.id, newTab.folder);
   }
+  // If index > activeTabIndex, no changes needed - active tab is unaffected
   
   renderTabs();
   refreshNotes();
@@ -245,20 +256,9 @@ function renderNotes(notes: NoteInfo[]) {
               // Close tab if open
               const tabIdx = findTabIndex(id, folder);
               if (tabIdx >= 0) {
-                  openTabs.splice(tabIdx, 1);
-                  if (tabIdx <= activeTabIndex) {
-                      activeTabIndex = Math.max(0, activeTabIndex - 1);
-                  }
-                  if (openTabs.length === 0) {
-                      activeTabIndex = -1;
-                      editorManager.clear();
-                      noteManager.setCurrentNote(null);
-                  } else {
-                      const newTab = openTabs[activeTabIndex];
-                      editorManager.setContent(newTab.content);
-                      noteManager.setCurrentNote(newTab.id, newTab.folder);
-                  }
-                  renderTabs();
+                  // Mark as unmodified to skip re-saving the deleted note
+                  openTabs[tabIdx].modified = false;
+                  closeTab(tabIdx);
               }
               
               window.electron.saveLastNote(null, null);
@@ -1076,16 +1076,6 @@ if (opacitySlider) {
     await window.electron.setWindowOpacity(value / 100);
   });
 }
-
-document.querySelectorAll('.corner-btn').forEach(btn => {
-  btn.addEventListener('click', async () => {
-    const corner = (btn as HTMLElement).dataset.corner as 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
-    if (corner) {
-      await window.electron.snapToCorner(corner);
-      ui.showToast(`Snapped to ${corner.replace('-', ' ')}`, 'info');
-    }
-  });
-});
 
 // ============ Tab Keyboard Shortcuts ============
 
