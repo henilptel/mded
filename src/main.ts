@@ -147,6 +147,13 @@ function createWindow(): void {
       mainWindow?.hide();
     }
   });
+
+  // Prevent maximizing while in minimal mode
+  mainWindow.on('maximize', () => {
+    if (isInMinimalMode) {
+      mainWindow?.unmaximize();
+    }
+  });
 }
 
 const createTray = (): void => {
@@ -618,6 +625,10 @@ ipcMain.on('minimize-window', () => {
 });
 
 ipcMain.on('maximize-window', () => {
+  // Don't allow maximize in minimal mode
+  if (isInMinimalMode) {
+    return;
+  }
   if (mainWindow?.isMaximized()) {
     mainWindow.unmaximize();
   } else {
@@ -697,7 +708,9 @@ ipcMain.handle('enter-minimal-mode', async () => {
   isInMinimalMode = true;
   
   // Use saved minimal bounds or defaults (small window)
-  const { width, height, x, y } = config.minimalModeBounds || { width: 400, height: 300 };
+  const savedBounds = config.minimalModeBounds || {};
+  const width = savedBounds.width || 400;
+  const height = savedBounds.height || 300;
   
   // Set minimum size for minimal mode
   mainWindow.setMinimumSize(200, 150);
@@ -707,12 +720,17 @@ ipcMain.handle('enter-minimal-mode', async () => {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width: screenWidth, height: screenHeight, x: screenX, y: screenY } = primaryDisplay.workArea;
   
-  const newX = x !== undefined ? x : screenX + Math.round((screenWidth - width) / 2);
-  const newY = y !== undefined ? y : screenY + Math.round((screenHeight - height) / 2);
+  const newX = savedBounds.x !== undefined ? savedBounds.x : screenX + Math.round((screenWidth - width) / 2);
+  const newY = savedBounds.y !== undefined ? savedBounds.y : screenY + Math.round((screenHeight - height) / 2);
+  
+  // Unmaximize first if window is maximized
+  if (mainWindow.isMaximized()) {
+    mainWindow.unmaximize();
+  }
   
   mainWindow.setBounds({
-    width: width || 400,
-    height: height || 300,
+    width,
+    height,
     x: newX,
     y: newY
   });

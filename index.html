@@ -207,6 +207,11 @@
         </div>
 
         <div class="editor-container">
+          <!-- Tabs Bar -->
+          <div class="tabs-bar" id="tabs-bar">
+            <!-- Tabs will be dynamically added here -->
+          </div>
+
           <div class="editor-header glass">
             <div class="toolbar">
               <button
@@ -410,13 +415,8 @@
                 </svg>
               </button>
             </div>
+
             <div class="editor-actions">
-              <button class="btn-toggle" id="split-view-btn" title="Split View">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                  <line x1="12" y1="3" x2="12" y2="21"></line>
-                </svg>
-              </button>
               <button class="btn-toggle" id="toggle-preview">
                 <span class="toggle-label" id="mode-label">Preview</span>
               </button>
@@ -525,14 +525,31 @@
                 <kbd>Ctrl</kbd>+<kbd>N</kbd><span>New note</span>
               </div>
               <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>P</kbd><span>Command palette</span>
+              </div>
+              <div class="shortcut-row">
                 <kbd>Ctrl</kbd>+<kbd>E</kbd><span>Toggle preview</span>
               </div>
               <div class="shortcut-row">
                 <kbd>Ctrl</kbd>+<kbd>/</kbd><span>Show shortcuts</span>
               </div>
               <div class="shortcut-row">
-                <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd
-                ><span>Global: Show app</span>
+                <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd><span>Focus sidebar</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Escape</kbd><span>Close modals</span>
+              </div>
+            </div>
+            <div class="shortcut-section">
+              <h3>Tabs</h3>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>Tab</kbd><span>Next tab</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Tab</kbd><span>Previous tab</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>W</kbd><span>Close tab</span>
               </div>
             </div>
             <div class="shortcut-section">
@@ -545,6 +562,27 @@
               </div>
               <div class="shortcut-row">
                 <kbd>Ctrl</kbd>+<kbd>K</kbd><span>Link</span>
+              </div>
+            </div>
+            <div class="shortcut-section">
+              <h3>Editor</h3>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>D</kbd><span>Duplicate line</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Shift</kbd>+<kbd>Delete</kbd><span>Delete line</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>=</kbd><span>Increase font</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>-</kbd><span>Decrease font</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Tab</kbd><span>Indent / list</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Shift</kbd>+<kbd>Tab</kbd><span>Outdent</span>
               </div>
             </div>
           </div>

@@ -20,6 +20,137 @@ const editorManager = new EditorManager(ui.elements.editor, ui.elements.preview,
 let autoSaveTimer: number | null = null;
 let isRecordingShortcut = false;
 
+// ============ Tab Management ============
+interface Tab {
+  id: string;
+  folder: string;
+  title: string;
+  content: string;
+  modified: boolean;
+}
+
+let openTabs: Tab[] = [];
+let activeTabIndex = -1;
+
+function getTabsBar(): HTMLElement {
+  return document.getElementById('tabs-bar') as HTMLElement;
+}
+
+function renderTabs() {
+  const tabsBar = getTabsBar();
+  tabsBar.innerHTML = '';
+  
+  if (openTabs.length === 0) {
+    tabsBar.classList.add('hidden');
+    return;
+  }
+  tabsBar.classList.remove('hidden');
+  
+  openTabs.forEach((tab, index) => {
+    const tabEl = document.createElement('div');
+    tabEl.className = 'tab-item' + (index === activeTabIndex ? ' active' : '') + (tab.modified ? ' modified' : '');
+    
+    const title = document.createElement('span');
+    title.className = 'tab-title';
+    title.textContent = tab.title;
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'tab-close';
+    closeBtn.innerHTML = '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeTab(index);
+    });
+    
+    tabEl.appendChild(title);
+    tabEl.appendChild(closeBtn);
+    tabEl.addEventListener('click', () => switchToTab(index));
+    tabsBar.appendChild(tabEl);
+  });
+}
+
+function findTabIndex(id: string, folder: string): number {
+  return openTabs.findIndex(t => t.id === id && t.folder === folder);
+}
+
+function openTab(id: string, folder: string, title: string, content: string) {
+  const existingIndex = findTabIndex(id, folder);
+  if (existingIndex >= 0) {
+    switchToTab(existingIndex);
+    return;
+  }
+  
+  saveCurrentTabContent();
+  
+  const tab: Tab = { id, folder, title, content, modified: false };
+  openTabs.push(tab);
+  activeTabIndex = openTabs.length - 1;
+  editorManager.setContent(content);
+  renderTabs();
+}
+
+function switchToTab(index: number) {
+  if (index < 0 || index >= openTabs.length || index === activeTabIndex) return;
+  
+  saveCurrentTabContent();
+  activeTabIndex = index;
+  const tab = openTabs[activeTabIndex];
+  editorManager.setContent(tab.content);
+  noteManager.setCurrentNote(tab.id, tab.folder);
+  renderTabs();
+  refreshNotes();
+}
+
+function closeTab(index: number) {
+  if (index < 0 || index >= openTabs.length) return;
+  
+  const tab = openTabs[index];
+  if (tab.modified) {
+    noteManager.saveNote(tab.id, tab.content, tab.folder);
+  }
+  
+  openTabs.splice(index, 1);
+  
+  if (openTabs.length === 0) {
+    activeTabIndex = -1;
+    editorManager.clear();
+    noteManager.setCurrentNote(null);
+  } else if (index <= activeTabIndex) {
+    activeTabIndex = Math.max(0, activeTabIndex - 1);
+    const newTab = openTabs[activeTabIndex];
+    editorManager.setContent(newTab.content);
+    noteManager.setCurrentNote(newTab.id, newTab.folder);
+  }
+  
+  renderTabs();
+  refreshNotes();
+}
+
+function saveCurrentTabContent() {
+  if (activeTabIndex >= 0 && openTabs[activeTabIndex]) {
+    openTabs[activeTabIndex].content = editorManager.getContent();
+  }
+}
+
+function markCurrentTabModified() {
+  if (activeTabIndex >= 0 && openTabs[activeTabIndex]) {
+    openTabs[activeTabIndex].modified = true;
+    openTabs[activeTabIndex].content = editorManager.getContent();
+    renderTabs();
+  }
+}
+
+function markCurrentTabSaved() {
+  if (activeTabIndex >= 0 && openTabs[activeTabIndex]) {
+    openTabs[activeTabIndex].modified = false;
+    renderTabs();
+  }
+}
+
+function getCurrentTab(): Tab | null {
+  return activeTabIndex >= 0 ? openTabs[activeTabIndex] : null;
+}
+
 // ============ Event Handlers ============
 
 async function refreshNotes() {
@@ -79,25 +210,23 @@ let focusedNoteIndex = -1;
 
 function renderNotes(notes: NoteInfo[]) {
   currentDisplayedNotes = notes;
-  const state = noteManager.currentState;
+  const currentTab = getCurrentTab();
   ui.renderNotes(notes, { 
-      id: state.currentNoteId, 
-      folder: state.activeNoteFolder, 
+      id: currentTab?.id || null, 
+      folder: currentTab?.folder || '', 
       searchQuery: ui.elements.searchInput.value.trim() 
     }, {
       onSelect: async (id, folder) => {
           await loadNote(id, folder);
       },
       onRename: async (id, folder) => {
-          // Find current note title/name (file name for now)
           const note = notes.find(n => n.id === id);
           if (!note) return;
           showRenameModal('note', note.title, async (newName) => {
               const result = await noteManager.renameNote(id, newName, folder);
               if (result.success) {
                   ui.showToast('Note renamed', 'success');
-                  if (state.currentNoteId === id) {
-                      // Note ID changes if filename changes
+                  if (currentTab?.id === id) {
                       noteManager.setCurrentNote(result.noteId || newName, folder);
                   }
                   refreshNotes();
@@ -108,23 +237,31 @@ function renderNotes(notes: NoteInfo[]) {
           });
       },
       onDelete: async (id, folder) => {
-          // Implement Delete
-          const confirmed = confirm(`Delete note?`); // Temporary, use Modal later
+          const confirmed = confirm(`Delete note?`);
           if (confirmed) {
               await noteManager.deleteNote(id, folder);
               ui.showToast('Note deleted', 'success');
               
-              if (state.currentNoteId === id) {
-                  // Clear editor and state immediately
-                  editorManager.clear();
-                  noteManager.setCurrentNote(null);
-                  window.electron.saveLastNote(null, null); // Clear persistence
-                  
-                  // Optional: Load the next available note or the first one in list
-                  // For now, just leaving it empty or letting refreshNotes handle list
-                  // refreshNotes will re-render list, and if no note selected, UI shows empty
+              // Close tab if open
+              const tabIdx = findTabIndex(id, folder);
+              if (tabIdx >= 0) {
+                  openTabs.splice(tabIdx, 1);
+                  if (tabIdx <= activeTabIndex) {
+                      activeTabIndex = Math.max(0, activeTabIndex - 1);
+                  }
+                  if (openTabs.length === 0) {
+                      activeTabIndex = -1;
+                      editorManager.clear();
+                      noteManager.setCurrentNote(null);
+                  } else {
+                      const newTab = openTabs[activeTabIndex];
+                      editorManager.setContent(newTab.content);
+                      noteManager.setCurrentNote(newTab.id, newTab.folder);
+                  }
+                  renderTabs();
               }
               
+              window.electron.saveLastNote(null, null);
               await refreshNotes();
           }
       },
@@ -209,39 +346,35 @@ function updateSidebarFocus() {
 const recentNotesStack: {id: string, folder: string}[] = [];
 
 async function loadNote(id: string, folder: string) {
-    // Auto-save previous
-    if (noteManager.currentState.currentNoteId) {
-        saveCurrentNote(); // async but don't await to block UI?
+    // Auto-save previous tab
+    saveCurrentTabContent();
+    const currentTab = getCurrentTab();
+    if (currentTab && currentTab.modified) {
+        await noteManager.saveNote(currentTab.id, currentTab.content, currentTab.folder);
     }
 
     noteManager.setCurrentNote(id, folder);
     const result = await noteManager.readNote(id, folder);
     
     if (result.success && result.content !== undefined) {
-        editorManager.setContent(result.content);
+        const title = id.replace('.md', '');
+        openTab(id, folder, title, result.content);
         
-        // Sync Sidebar if folder changed or if search was active
         if (folder !== noteManager.currentState.currentFolder) {
             noteManager.setCurrentFolder(folder);
-            ui.elements.searchInput.value = ''; // Clear search to ensure note is visible
-            await refreshFolders(); // Update selected folder in sidebar
+            ui.elements.searchInput.value = '';
+            await refreshFolders();
         }
         
-        refreshNotes(); // To update active class and list
+        refreshNotes();
         
-        // Update History
-        // Remove if exists
         const idx = recentNotesStack.findIndex(n => n.id === id);
-        if (idx !== -1) {
-            recentNotesStack.splice(idx, 1);
-        }
-        // Push to top
+        if (idx !== -1) recentNotesStack.splice(idx, 1);
         recentNotesStack.push({ id, folder });
         
     } else {
-        // If note is missing, clear state and persistence
         if (result.error && (result.error.includes('ENOENT') || result.error.includes('no such file'))) {
-             ui.showToast('Note found (removed)', 'error');
+             ui.showToast('Note not found', 'error');
              editorManager.clear();
              noteManager.setCurrentNote(null);
              window.electron.saveLastNote(null, null);
@@ -251,8 +384,6 @@ async function loadNote(id: string, folder: string) {
         }
     }
 }
-
-// ... existing code ...
 
 // Shortcut
 shortcutManager.registerCtrl('Tab', (e) => {
@@ -266,24 +397,22 @@ shortcutManager.registerCtrl('Tab', (e) => {
 });
 
 async function saveCurrentNote() {
-    const { currentNoteId, activeNoteFolder } = noteManager.currentState;
-    // Don't save if no note selected or if it was just deleted (handled by caller usually but safety check)
-    if (!currentNoteId) {
-        // If no note selected but we have content, create a new one!
+    const tab = getCurrentTab();
+    
+    if (!tab) {
         const content = editorManager.getContent();
         if (content && content.trim().length > 0) {
             ui.updateSaveIndicator('saving');
             const result = await noteManager.createNote();
             if (result.success && result.noteId) {
-                // Set as current immediately
                 noteManager.setCurrentNote(result.noteId, result.folder);
                 ui.showToast('New note created', 'success');
-                // Refresh to show in list
                 await refreshNotes();
-                // Now save the content
                 const saveResult = await noteManager.saveNote(result.noteId, content, result.folder || '');
                 if (saveResult.success) {
                     ui.updateSaveIndicator('saved');
+                    const title = result.noteId.replace('.md', '');
+                    openTab(result.noteId, result.folder || '', title, content);
                 } else {
                     ui.updateSaveIndicator('error', saveResult.error);
                 }
@@ -294,27 +423,23 @@ async function saveCurrentNote() {
         return;
     }
 
-    if (currentNoteId) {
-        // Optimization: prevent updating modified time if content hasn't changed
-        if (!editorManager.isContentChanged()) {
-             return;
-        }
+    if (!tab.modified) return;
 
-        ui.updateSaveIndicator('saving');
-        const content = editorManager.getContent();
-        const result = await noteManager.saveNote(currentNoteId, content, activeNoteFolder);
-        if (result.success) {
+    ui.updateSaveIndicator('saving');
+    saveCurrentTabContent();
+    const result = await noteManager.saveNote(tab.id, tab.content, tab.folder);
+    
+    if (result.success) {
+        ui.updateSaveIndicator('saved');
+        markCurrentTabSaved();
+        editorManager.setContent(tab.content);
+    } else {
+        if (result.error && (result.error.includes('ENOENT') || result.error.includes('no such file'))) {
+            noteManager.setCurrentNote(null);
+            closeTab(activeTabIndex);
             ui.updateSaveIndicator('saved');
-            // Update original content so subsequent saves also check correctly
-            editorManager.setContent(content); 
         } else {
-             // If error is ENOENT, it means note was deleted. Stop trying to save it.
-            if (result.error && (result.error.includes('ENOENT') || result.error.includes('no such file'))) {
-                 noteManager.setCurrentNote(null); // Clear state so we don't try again
-                 ui.updateSaveIndicator('saved'); // Or just hidden
-            } else {
-                ui.updateSaveIndicator('error', result.error);
-            }
+            ui.updateSaveIndicator('error', result.error);
         }
     }
 }
@@ -328,6 +453,7 @@ ui.elements.searchInput.addEventListener('input', () => {
 
 // Editor
 editorManager.onInput = () => {
+    markCurrentTabModified();
     ui.updateSaveIndicator('saving');
     if (autoSaveTimer) clearTimeout(autoSaveTimer);
     autoSaveTimer = window.setTimeout(() => {
@@ -961,192 +1087,46 @@ document.querySelectorAll('.corner-btn').forEach(btn => {
   });
 });
 
-// ============ Split View ============
-let isSplitViewActive = false;
-let secondNoteId: string | null = null;
-let secondNoteFolder: string = '';
-let secondEditorContent: string = '';
+// ============ Tab Keyboard Shortcuts ============
 
-const splitViewBtn = document.getElementById('split-view-btn');
-const mainContent = document.querySelector('.main-content');
-
-function createSplitView() {
-  if (!mainContent || isSplitViewActive) return;
-  
-  const existingEditorContainer = document.querySelector('.editor-container');
-  if (!existingEditorContainer) return;
-  
-  isSplitViewActive = true;
-  splitViewBtn?.classList.add('active');
-  
-  const wrapper = document.createElement('div');
-  wrapper.className = 'split-view-container';
-  wrapper.id = 'split-view-wrapper';
-  
-  const divider = document.createElement('div');
-  divider.className = 'split-divider';
-  divider.id = 'split-divider';
-  
-  const secondEditor = document.createElement('div');
-  secondEditor.className = 'editor-container';
-  secondEditor.id = 'second-editor-container';
-  secondEditor.innerHTML = `
-    <div class="editor-header glass">
-      <div class="toolbar" style="flex: 1;">
-        <span style="font-size: 12px; color: var(--text-tertiary);">Select a note from sidebar</span>
-      </div>
-      <div class="editor-actions">
-        <button class="btn-toggle" id="close-split-view" title="Close Split View">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-    </div>
-    <div class="editor-area glass">
-      <textarea class="editor" id="second-editor" placeholder="Select a note to edit..."></textarea>
-      <div class="preview" id="second-preview"></div>
-    </div>
-  `;
-  
-  existingEditorContainer.parentNode?.insertBefore(wrapper, existingEditorContainer);
-  wrapper.appendChild(existingEditorContainer);
-  wrapper.appendChild(divider);
-  wrapper.appendChild(secondEditor);
-  
-  document.getElementById('close-split-view')?.addEventListener('click', closeSplitView);
-  
-  setupSplitDividerDrag(divider, existingEditorContainer as HTMLElement, secondEditor);
-  setupSecondEditorEvents();
-}
-
-function closeSplitView() {
-  if (!isSplitViewActive) return;
-  
-  const wrapper = document.getElementById('split-view-wrapper');
-  const firstEditor = wrapper?.querySelector('.editor-container:first-child');
-  const secondEditorContainer = document.getElementById('second-editor-container');
-  
-  if (wrapper && firstEditor && mainContent) {
-    mainContent.insertBefore(firstEditor, wrapper);
-    wrapper.remove();
-  }
-  
-  isSplitViewActive = false;
-  splitViewBtn?.classList.remove('active');
-  secondNoteId = null;
-  secondNoteFolder = '';
-  secondEditorContent = '';
-}
-
-function setupSplitDividerDrag(divider: HTMLElement, left: HTMLElement, right: HTMLElement) {
-  let isDragging = false;
-  
-  divider.addEventListener('mousedown', (e) => {
-    isDragging = true;
-    document.body.style.cursor = 'col-resize';
+// Close current tab: Ctrl+W
+shortcutManager.registerCtrl('w', (e) => {
     e.preventDefault();
-  });
-  
-  document.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    
-    const container = divider.parentElement;
-    if (!container) return;
-    
-    const containerRect = container.getBoundingClientRect();
-    const newLeftWidth = e.clientX - containerRect.left;
-    const totalWidth = containerRect.width;
-    
-    const leftPercent = Math.max(20, Math.min(80, (newLeftWidth / totalWidth) * 100));
-    const rightPercent = 100 - leftPercent;
-    
-    left.style.flex = `0 0 ${leftPercent}%`;
-    right.style.flex = `0 0 ${rightPercent}%`;
-  });
-  
-  document.addEventListener('mouseup', () => {
-    if (isDragging) {
-      isDragging = false;
-      document.body.style.cursor = '';
+    if (activeTabIndex >= 0) {
+        closeTab(activeTabIndex);
     }
-  });
-}
-
-function setupSecondEditorEvents() {
-  const secondEditorEl = document.getElementById('second-editor') as HTMLTextAreaElement;
-  if (!secondEditorEl) return;
-  
-  let saveTimer: number | null = null;
-  
-  secondEditorEl.addEventListener('input', () => {
-    secondEditorContent = secondEditorEl.value;
-    
-    if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = window.setTimeout(async () => {
-      if (secondNoteId) {
-        await window.electron.saveNote(secondNoteId, secondEditorContent, secondNoteFolder);
-      }
-    }, 1000);
-  });
-}
-
-async function loadNoteInSecondEditor(noteId: string, folder: string) {
-  if (!isSplitViewActive) return;
-  
-  const result = await window.electron.readNote(noteId, folder);
-  if (result.success && result.content !== undefined) {
-    secondNoteId = noteId;
-    secondNoteFolder = folder;
-    secondEditorContent = result.content;
-    
-    const secondEditorEl = document.getElementById('second-editor') as HTMLTextAreaElement;
-    if (secondEditorEl) {
-      secondEditorEl.value = result.content;
-    }
-    
-    const headerToolbar = document.querySelector('#second-editor-container .toolbar');
-    if (headerToolbar) {
-      const title = noteId.replace('.md', '');
-      headerToolbar.innerHTML = `<span style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">${title}</span>`;
-    }
-  }
-}
-
-splitViewBtn?.addEventListener('click', () => {
-  if (isSplitViewActive) {
-    closeSplitView();
-  } else {
-    createSplitView();
-    ui.showToast('Split view enabled - Ctrl+Click a note to open in second pane', 'info');
-  }
 });
 
-const originalLoadNote = loadNote;
-async function loadNoteWithSplit(id: string, folder: string, inSecondPane = false) {
-  if (isSplitViewActive && inSecondPane) {
-    await loadNoteInSecondEditor(id, folder);
-  } else {
-    await originalLoadNote(id, folder);
-  }
-}
-
-document.addEventListener('click', (e) => {
-  if (!isSplitViewActive) return;
-  
-  const noteItem = (e.target as HTMLElement).closest('.note-item');
-  if (!noteItem) return;
-  
-  if (e.ctrlKey || e.metaKey) {
+// Next tab: Ctrl+Tab or Ctrl+PageDown
+shortcutManager.register('ctrl+tab', (e) => {
     e.preventDefault();
-    e.stopPropagation();
-    
-    const noteId = noteItem.getAttribute('data-note-id');
-    const folder = noteItem.getAttribute('data-folder') || '';
-    
-    if (noteId) {
-      loadNoteInSecondEditor(noteId, folder);
+    if (openTabs.length > 1) {
+        const nextIndex = (activeTabIndex + 1) % openTabs.length;
+        switchToTab(nextIndex);
     }
-  }
-}, true);
+});
+
+shortcutManager.registerCtrl('pagedown', (e) => {
+    e.preventDefault();
+    if (openTabs.length > 1) {
+        const nextIndex = (activeTabIndex + 1) % openTabs.length;
+        switchToTab(nextIndex);
+    }
+});
+
+// Previous tab: Ctrl+Shift+Tab or Ctrl+PageUp  
+shortcutManager.register('ctrl+shift+tab', (e) => {
+    e.preventDefault();
+    if (openTabs.length > 1) {
+        const prevIndex = (activeTabIndex - 1 + openTabs.length) % openTabs.length;
+        switchToTab(prevIndex);
+    }
+});
+
+shortcutManager.registerCtrl('pageup', (e) => {
+    e.preventDefault();
+    if (openTabs.length > 1) {
+        const prevIndex = (activeTabIndex - 1 + openTabs.length) % openTabs.length;
+        switchToTab(prevIndex);
+    }
+});

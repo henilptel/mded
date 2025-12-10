@@ -101,9 +101,9 @@ export class EditorManager {
               const isChecked = match[0].includes('x') || match[0].includes('X');
               const newStr = isChecked ? '- [ ]' : '- [x]';
               
-              this.editor.value = content.substring(0, match.index) + 
-                                  newStr + 
-                                  content.substring(match.index + match[0].length);
+              this.editor.focus();
+              this.editor.setSelectionRange(match.index, match.index + match[0].length);
+              document.execCommand('insertText', false, newStr);
               
               this.updatePreview();
               this.onInput?.();
@@ -125,8 +125,11 @@ export class EditorManager {
     const selectedText = this.editor.value.substring(start, end);
     const newText = before + selectedText + after;
     
-    this.editor.value = this.editor.value.substring(0, start) + newText + this.editor.value.substring(end);
     this.editor.focus();
+    this.editor.setSelectionRange(start, end);
+    document.execCommand('insertText', false, newText);
+    
+    // Position cursor inside the inserted text
     this.editor.selectionStart = start + before.length;
     this.editor.selectionEnd = start + before.length + selectedText.length;
     
@@ -143,8 +146,9 @@ export class EditorManager {
     const line = this.editor.value.substring(lineStart, end);
     const newLine = line.startsWith(prefix) ? line.substring(prefix.length) : prefix + line;
     
-    this.editor.value = this.editor.value.substring(0, lineStart) + newLine + this.editor.value.substring(end);
     this.editor.focus();
+    this.editor.setSelectionRange(lineStart, end);
+    document.execCommand('insertText', false, newLine);
     
     this.updatePreview();
     this.onInput?.();
@@ -201,7 +205,7 @@ export class EditorManager {
     });
 
     this.editor.addEventListener('keydown', (e) => {
-        if (e.key === 'Tab') {
+        if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey) {
             this.handleTab(e);
         } else if (e.key === 'Enter') {
             this.handleEnter(e);
@@ -254,8 +258,9 @@ export class EditorManager {
           if (!rest.trim()) {
               // Empty list item -> Exit list
               e.preventDefault();
-              // Remove the specific line content
-              this.editor.setRangeText('', lineStart, start, 'end');
+              // Remove the specific line content using execCommand
+              this.editor.setSelectionRange(lineStart, start);
+              document.execCommand('delete');
           } else {
               // Continue list
               e.preventDefault();
