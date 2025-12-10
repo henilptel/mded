@@ -9,6 +9,7 @@ let mainWindow: BrowserWindow | null = null;
 let quickNoteWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
+let fileToOpen: string | null = null;
 
 /**
  * Validates that a file or folder name is safe and does not contain path traversal characters.
@@ -32,10 +33,16 @@ function validatePath(baseDir: string, relativePath: string): string {
 }
 
 const NOTES_DIR = path.join(os.homedir(), '.mded', 'notes');
+const ASSETS_DIR = path.join(os.homedir(), '.mded', 'assets');
 
 // Ensure notes directory exists
 if (!fsSync.existsSync(NOTES_DIR)) {
   fsSync.mkdirSync(NOTES_DIR, { recursive: true });
+}
+
+// Ensure assets directory exists
+if (!fsSync.existsSync(ASSETS_DIR)) {
+  fsSync.mkdirSync(ASSETS_DIR, { recursive: true });
 }
 
 const CONFIG_FILE = path.join(os.homedir(), '.mded', 'config.json');
@@ -48,7 +55,8 @@ let config: any = {
   lastFolder: null as string | null,
   pinnedNotes: [] as string[],
   minimalModeBounds: { width: 400, height: 300 } as { width: number, height: number, x?: number, y?: number },
-  windowOpacity: 1.0
+  windowOpacity: 1.0,
+  autoStartOnBoot: false
 };
 
 function loadConfig() {
@@ -139,6 +147,11 @@ function createWindow(): void {
         `document.documentElement.style.setProperty('--window-opacity', '${config.windowOpacity}')`
       );
     }
+    
+    if (fileToOpen) {
+      mainWindow?.webContents.send('open-file', fileToOpen);
+      fileToOpen = null;
+    }
   });
 
   mainWindow.on('close', (event) => {
@@ -182,17 +195,34 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
 } else {
-  app.on('second-instance', () => {
+  app.on('second-instance', (_event, commandLine) => {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       if (!mainWindow.isVisible()) mainWindow.show();
       mainWindow.focus();
+      
+      const filePath = commandLine.find(arg => arg.endsWith('.md') && !arg.startsWith('-'));
+      if (filePath) {
+        mainWindow.webContents.send('open-file', filePath);
+      }
     }
   });
 
   app.whenReady().then(() => {
+    const args = process.argv.slice(1);
+    const mdFile = args.find(arg => arg.endsWith('.md') && !arg.startsWith('-'));
+    if (mdFile) {
+      fileToOpen = path.resolve(mdFile);
+    }
+    
+    const startHidden = args.includes('--hidden');
+    
     createWindow();
     createTray();
+    
+    if (startHidden && mainWindow) {
+      mainWindow.hide();
+    }
     
     // Global hotkey to show/focus window (Ctrl+Shift+N)
     // Register global shortcut
@@ -802,4 +832,93 @@ ipcMain.handle('get-display-info', async () => {
   const { screen } = require('electron');
   const primaryDisplay = screen.getPrimaryDisplay();
   return primaryDisplay.workArea;
+});
+
+// ============ P5: System Integration ============
+
+ipcMain.handle('save-screenshot', async (_event, base64Data: string) => {
+  try {
+    const imageId = `screenshot-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.png`;
+    const imagePath = path.join(ASSETS_DIR, imageId);
+    
+    const base64Image = base64Data.replace(/^data:image\/\w+;base64,/, '');
+    const buffer = Buffer.from(base64Image, 'base64');
+    
+    await fs.writeFile(imagePath, buffer);
+    
+    return { success: true, imagePath: imagePath, imageId: imageId };
+  } catch (error) {
+    console.error('Error saving screenshot:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle('get-assets-path', () => {
+  return ASSETS_DIR;
+});
+
+ipcMain.handle('read-external-file', async (_event, filePath: string) => {
+  try {
+    if (!filePath.endsWith('.md')) {
+      return { success: false, error: 'Not a markdown file' };
+    }
+    
+    const resolvedPath = path.resolve(filePath);
+    const content = await fs.readFile(resolvedPath, 'utf-8');
+    const fileName = path.basename(resolvedPath);
+    
+    return { 
+      success: true, 
+      content, 
+      fileName,
+      filePath: resolvedPath
+    };
+  } catch (error) {
+    console.error('Error reading external file:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+// ============ Auto-Start on Boot ============
+
+const AUTOSTART_DIR = path.join(os.homedir(), '.config', 'autostart');
+const AUTOSTART_FILE = path.join(AUTOSTART_DIR, 'mded.desktop');
+
+ipcMain.handle('get-auto-start', () => {
+  return config.autoStartOnBoot;
+});
+
+ipcMain.handle('set-auto-start', async (_event, enabled: boolean) => {
+  try {
+    if (enabled) {
+      if (!fsSync.existsSync(AUTOSTART_DIR)) {
+        await fs.mkdir(AUTOSTART_DIR, { recursive: true });
+      }
+      
+      const desktopContent = `[Desktop Entry]
+Type=Application
+Name=MDed
+Comment=Minimalistic Markdown Editor
+Exec=/home/real/projects/mded/run.sh --hidden
+Icon=/home/real/projects/mded/build/icon.png
+Terminal=false
+Categories=Utility;TextEditor;
+StartupWMClass=mded
+X-GNOME-Autostart-enabled=true
+`;
+      await fs.writeFile(AUTOSTART_FILE, desktopContent, 'utf-8');
+    } else {
+      if (fsSync.existsSync(AUTOSTART_FILE)) {
+        await fs.unlink(AUTOSTART_FILE);
+      }
+    }
+    
+    config.autoStartOnBoot = enabled;
+    scheduleSaveConfig();
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error setting auto-start:', error);
+    return { success: false, error: String(error) };
+  }
 });

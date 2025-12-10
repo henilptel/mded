@@ -864,6 +864,17 @@ async function init() {
         }
     });
 
+    // Listen for file open requests (Open With MDed)
+    window.electron.onOpenFile(async (filePath) => {
+        const result = await window.electron.readExternalFile(filePath);
+        if (result.success && result.content !== undefined) {
+            editorManager.setContent(result.content);
+            ui.showToast(`Opened: ${result.fileName}`);
+        } else {
+            ui.showToast(`Failed to open file: ${result.error}`, 'error');
+        }
+    });
+
     // Load initial state
     const { noteId, folder } = await window.electron.getLastNote();
     if (noteId) {
@@ -1058,6 +1069,12 @@ if (displaySettingsModal && displaySettingsBtn && displaySettingsClose) {
     const opacity = await window.electron.getWindowOpacity();
     if (opacitySlider) opacitySlider.value = String(Math.round(opacity * 100));
     if (opacityValue) opacityValue.textContent = `${Math.round(opacity * 100)}%`;
+    
+    const autoStartToggle = document.getElementById('auto-start-toggle') as HTMLInputElement;
+    if (autoStartToggle) {
+      const autoStart = await window.electron.getAutoStart();
+      autoStartToggle.checked = autoStart;
+    }
   });
   
   displaySettingsClose.addEventListener('click', () => {
@@ -1074,6 +1091,20 @@ if (opacitySlider) {
     const value = parseInt((e.target as HTMLInputElement).value);
     if (opacityValue) opacityValue.textContent = `${value}%`;
     await window.electron.setWindowOpacity(value / 100);
+  });
+}
+
+const autoStartToggle = document.getElementById('auto-start-toggle') as HTMLInputElement;
+if (autoStartToggle) {
+  autoStartToggle.addEventListener('change', async (e) => {
+    const enabled = (e.target as HTMLInputElement).checked;
+    const result = await window.electron.setAutoStart(enabled);
+    if (result.success) {
+      ui.showToast(enabled ? 'Auto-start enabled' : 'Auto-start disabled', 'success');
+    } else {
+      ui.showToast('Failed to update auto-start setting', 'error');
+      autoStartToggle.checked = !enabled;
+    }
   });
 }
 
