@@ -58,6 +58,16 @@ const electronAPI = {
   saveLastNote: (noteId: string | null, folder: string | null): Promise<ApiResult> => ipcRenderer.invoke('save-last-note', noteId, folder),
   saveQuickNote: (content: string): Promise<ApiResult> => ipcRenderer.invoke('save-quick-note', content),
   
+  // P4: Window & Display Features
+  enterMinimalMode: (): Promise<ApiResult> => ipcRenderer.invoke('enter-minimal-mode'),
+  exitMinimalMode: (): Promise<ApiResult> => ipcRenderer.invoke('exit-minimal-mode'),
+  saveMinimalBounds: (): Promise<ApiResult> => ipcRenderer.invoke('save-minimal-bounds'),
+  getWindowOpacity: (): Promise<number> => ipcRenderer.invoke('get-window-opacity'),
+  setWindowOpacity: (opacity: number): Promise<ApiResult & { opacity?: number }> => ipcRenderer.invoke('set-window-opacity', opacity),
+  snapToCorner: (corner: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'): Promise<ApiResult> => 
+    ipcRenderer.invoke('snap-to-corner', corner),
+  getDisplayInfo: (): Promise<{ x: number, y: number, width: number, height: number }> => ipcRenderer.invoke('get-display-info'),
+  
   // Events
   onRefreshNotes: (callback: (noteId?: string) => void) => ipcRenderer.on('refresh-notes', (_event, noteId) => callback(noteId))
 };

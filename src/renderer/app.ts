@@ -388,6 +388,11 @@ ui.elements.minimalModeBtn.addEventListener('click', () => {
     ui.toggleMinimalMode(!isMinimal);
 });
 
+// Exit minimal mode button
+document.getElementById('exit-minimal-btn')?.addEventListener('click', () => {
+    ui.toggleMinimalMode(false);
+});
+
 // Toolbar
 document.querySelectorAll('.toolbar-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -913,3 +918,235 @@ document.getElementById('new-folder-btn')?.addEventListener('click', () => {
     ui.elements.createFolderInput.addEventListener('keydown', keyHandler);
 });
 
+// ============ Display Settings Modal ============
+const displaySettingsModal = document.getElementById('display-settings-modal');
+const displaySettingsBtn = document.getElementById('display-settings-btn');
+const displaySettingsClose = document.getElementById('display-settings-close');
+const opacitySlider = document.getElementById('opacity-slider') as HTMLInputElement;
+const opacityValue = document.getElementById('opacity-value');
+
+if (displaySettingsModal && displaySettingsBtn && displaySettingsClose) {
+  displaySettingsBtn.addEventListener('click', async () => {
+    displaySettingsModal.classList.add('show');
+    
+    const opacity = await window.electron.getWindowOpacity();
+    if (opacitySlider) opacitySlider.value = String(Math.round(opacity * 100));
+    if (opacityValue) opacityValue.textContent = `${Math.round(opacity * 100)}%`;
+  });
+  
+  displaySettingsClose.addEventListener('click', () => {
+    displaySettingsModal.classList.remove('show');
+  });
+  
+  displaySettingsModal.addEventListener('click', (e) => {
+    if (e.target === displaySettingsModal) displaySettingsModal.classList.remove('show');
+  });
+}
+
+if (opacitySlider) {
+  opacitySlider.addEventListener('input', async (e) => {
+    const value = parseInt((e.target as HTMLInputElement).value);
+    if (opacityValue) opacityValue.textContent = `${value}%`;
+    await window.electron.setWindowOpacity(value / 100);
+  });
+}
+
+document.querySelectorAll('.corner-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const corner = (btn as HTMLElement).dataset.corner as 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+    if (corner) {
+      await window.electron.snapToCorner(corner);
+      ui.showToast(`Snapped to ${corner.replace('-', ' ')}`, 'info');
+    }
+  });
+});
+
+// ============ Split View ============
+let isSplitViewActive = false;
+let secondNoteId: string | null = null;
+let secondNoteFolder: string = '';
+let secondEditorContent: string = '';
+
+const splitViewBtn = document.getElementById('split-view-btn');
+const mainContent = document.querySelector('.main-content');
+
+function createSplitView() {
+  if (!mainContent || isSplitViewActive) return;
+  
+  const existingEditorContainer = document.querySelector('.editor-container');
+  if (!existingEditorContainer) return;
+  
+  isSplitViewActive = true;
+  splitViewBtn?.classList.add('active');
+  
+  const wrapper = document.createElement('div');
+  wrapper.className = 'split-view-container';
+  wrapper.id = 'split-view-wrapper';
+  
+  const divider = document.createElement('div');
+  divider.className = 'split-divider';
+  divider.id = 'split-divider';
+  
+  const secondEditor = document.createElement('div');
+  secondEditor.className = 'editor-container';
+  secondEditor.id = 'second-editor-container';
+  secondEditor.innerHTML = `
+    <div class="editor-header glass">
+      <div class="toolbar" style="flex: 1;">
+        <span style="font-size: 12px; color: var(--text-tertiary);">Select a note from sidebar</span>
+      </div>
+      <div class="editor-actions">
+        <button class="btn-toggle" id="close-split-view" title="Close Split View">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="editor-area glass">
+      <textarea class="editor" id="second-editor" placeholder="Select a note to edit..."></textarea>
+      <div class="preview" id="second-preview"></div>
+    </div>
+  `;
+  
+  existingEditorContainer.parentNode?.insertBefore(wrapper, existingEditorContainer);
+  wrapper.appendChild(existingEditorContainer);
+  wrapper.appendChild(divider);
+  wrapper.appendChild(secondEditor);
+  
+  document.getElementById('close-split-view')?.addEventListener('click', closeSplitView);
+  
+  setupSplitDividerDrag(divider, existingEditorContainer as HTMLElement, secondEditor);
+  setupSecondEditorEvents();
+}
+
+function closeSplitView() {
+  if (!isSplitViewActive) return;
+  
+  const wrapper = document.getElementById('split-view-wrapper');
+  const firstEditor = wrapper?.querySelector('.editor-container:first-child');
+  const secondEditorContainer = document.getElementById('second-editor-container');
+  
+  if (wrapper && firstEditor && mainContent) {
+    mainContent.insertBefore(firstEditor, wrapper);
+    wrapper.remove();
+  }
+  
+  isSplitViewActive = false;
+  splitViewBtn?.classList.remove('active');
+  secondNoteId = null;
+  secondNoteFolder = '';
+  secondEditorContent = '';
+}
+
+function setupSplitDividerDrag(divider: HTMLElement, left: HTMLElement, right: HTMLElement) {
+  let isDragging = false;
+  
+  divider.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    document.body.style.cursor = 'col-resize';
+    e.preventDefault();
+  });
+  
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    
+    const container = divider.parentElement;
+    if (!container) return;
+    
+    const containerRect = container.getBoundingClientRect();
+    const newLeftWidth = e.clientX - containerRect.left;
+    const totalWidth = containerRect.width;
+    
+    const leftPercent = Math.max(20, Math.min(80, (newLeftWidth / totalWidth) * 100));
+    const rightPercent = 100 - leftPercent;
+    
+    left.style.flex = `0 0 ${leftPercent}%`;
+    right.style.flex = `0 0 ${rightPercent}%`;
+  });
+  
+  document.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      document.body.style.cursor = '';
+    }
+  });
+}
+
+function setupSecondEditorEvents() {
+  const secondEditorEl = document.getElementById('second-editor') as HTMLTextAreaElement;
+  if (!secondEditorEl) return;
+  
+  let saveTimer: number | null = null;
+  
+  secondEditorEl.addEventListener('input', () => {
+    secondEditorContent = secondEditorEl.value;
+    
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = window.setTimeout(async () => {
+      if (secondNoteId) {
+        await window.electron.saveNote(secondNoteId, secondEditorContent, secondNoteFolder);
+      }
+    }, 1000);
+  });
+}
+
+async function loadNoteInSecondEditor(noteId: string, folder: string) {
+  if (!isSplitViewActive) return;
+  
+  const result = await window.electron.readNote(noteId, folder);
+  if (result.success && result.content !== undefined) {
+    secondNoteId = noteId;
+    secondNoteFolder = folder;
+    secondEditorContent = result.content;
+    
+    const secondEditorEl = document.getElementById('second-editor') as HTMLTextAreaElement;
+    if (secondEditorEl) {
+      secondEditorEl.value = result.content;
+    }
+    
+    const headerToolbar = document.querySelector('#second-editor-container .toolbar');
+    if (headerToolbar) {
+      const title = noteId.replace('.md', '');
+      headerToolbar.innerHTML = `<span style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">${title}</span>`;
+    }
+  }
+}
+
+splitViewBtn?.addEventListener('click', () => {
+  if (isSplitViewActive) {
+    closeSplitView();
+  } else {
+    createSplitView();
+    ui.showToast('Split view enabled - Ctrl+Click a note to open in second pane', 'info');
+  }
+});
+
+const originalLoadNote = loadNote;
+async function loadNoteWithSplit(id: string, folder: string, inSecondPane = false) {
+  if (isSplitViewActive && inSecondPane) {
+    await loadNoteInSecondEditor(id, folder);
+  } else {
+    await originalLoadNote(id, folder);
+  }
+}
+
+document.addEventListener('click', (e) => {
+  if (!isSplitViewActive) return;
+  
+  const noteItem = (e.target as HTMLElement).closest('.note-item');
+  if (!noteItem) return;
+  
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const noteId = noteItem.getAttribute('data-note-id');
+    const folder = noteItem.getAttribute('data-folder') || '';
+    
+    if (noteId) {
+      loadNoteInSecondEditor(noteId, folder);
+    }
+  }
+}, true);

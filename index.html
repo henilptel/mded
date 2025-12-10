@@ -56,6 +56,23 @@
           </button>
           <button
             class="window-btn"
+            id="display-settings-btn"
+            title="Display Settings"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+            </svg>
+          </button>
+          <button
+            class="window-btn"
             id="minimal-mode-btn"
             title="Minimal Mode (Always on Top)"
           >
@@ -394,6 +411,12 @@
               </button>
             </div>
             <div class="editor-actions">
+              <button class="btn-toggle" id="split-view-btn" title="Split View">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                  <line x1="12" y1="3" x2="12" y2="21"></line>
+                </svg>
+              </button>
               <button class="btn-toggle" id="toggle-preview">
                 <span class="toggle-label" id="mode-label">Preview</span>
               </button>
@@ -410,264 +433,327 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Keyboard Shortcuts Modal -->
-    <div class="modal-overlay" id="shortcuts-modal">
-      <div class="modal glass">
-        <div class="modal-header">
-          <h2>Keyboard Shortcuts</h2>
-          <button class="btn-icon-sm" id="shortcuts-close">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div
-            class="shortcut-section"
-            style="
-              margin-bottom: 24px;
-              padding-bottom: 16px;
-              border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            "
-          >
-            <h3>Configuration</h3>
+      <!-- Exit Minimal Mode Button -->
+      <button class="exit-minimal-btn" id="exit-minimal-btn" title="Exit Minimal Mode">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+        </svg>
+      </button>
+
+      <!-- Keyboard Shortcuts Modal -->
+      <div class="modal-overlay" id="shortcuts-modal">
+        <div class="modal glass">
+          <div class="modal-header">
+            <h2>Keyboard Shortcuts</h2>
+            <button class="btn-icon-sm" id="shortcuts-close">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
             <div
+              class="shortcut-section"
               style="
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                margin-top: 10px;
+                margin-bottom: 24px;
+                padding-bottom: 16px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
               "
             >
-              <div style="font-size: 13px; color: var(--text-secondary)">
-                Global Toggle Shortcut
-              </div>
-              <div style="display: flex; gap: 8px">
-                <div
-                  id="shortcut-display"
-                  style="
-                    padding: 6px 12px;
-                    background: rgba(0, 0, 0, 0.3);
-                    border-radius: 6px;
-                    font-family: monospace;
-                    font-size: 12px;
-                    min-width: 120px;
-                    text-align: center;
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                  "
-                >
-                  Loading...
+              <h3>Configuration</h3>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  margin-top: 10px;
+                "
+              >
+                <div style="font-size: 13px; color: var(--text-secondary)">
+                  Global Toggle Shortcut
                 </div>
-                <button
-                  id="record-shortcut-btn"
-                  class="btn-toggle"
-                  style="min-width: 80px"
-                >
-                  Record
+                <div style="display: flex; gap: 8px">
+                  <div
+                    id="shortcut-display"
+                    style="
+                      padding: 6px 12px;
+                      background: rgba(0, 0, 0, 0.3);
+                      border-radius: 6px;
+                      font-family: monospace;
+                      font-size: 12px;
+                      min-width: 120px;
+                      text-align: center;
+                      border: 1px solid rgba(255, 255, 255, 0.1);
+                    "
+                  >
+                    Loading...
+                  </div>
+                  <button
+                    id="record-shortcut-btn"
+                    class="btn-toggle"
+                    style="min-width: 80px"
+                  >
+                    Record
+                  </button>
+                </div>
+              </div>
+              <div
+                style="
+                  font-size: 11px;
+                  color: var(--text-quaternary);
+                  margin-top: 8px;
+                "
+              >
+                Click Record and press your desired key combination.
+              </div>
+            </div>
+            <div class="shortcut-section">
+              <h3>General</h3>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>S</kbd><span>Save note</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>N</kbd><span>New note</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>E</kbd><span>Toggle preview</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>/</kbd><span>Show shortcuts</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd
+                ><span>Global: Show app</span>
+              </div>
+            </div>
+            <div class="shortcut-section">
+              <h3>Formatting</h3>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>B</kbd><span>Bold</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>I</kbd><span>Italic</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>Ctrl</kbd>+<kbd>K</kbd><span>Link</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create Folder Modal -->
+      <div class="modal-overlay" id="create-folder-modal">
+        <div class="modal glass">
+          <div class="modal-header">
+            <h2>New Folder</h2>
+            <button class="btn-icon-sm" id="create-folder-close">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <input
+              type="text"
+              id="create-folder-input"
+              placeholder="Folder Name"
+              class="search-input"
+              style="margin-bottom: 16px"
+            />
+            <div style="display: flex; justify-content: flex-end; gap: 8px">
+              <button class="btn-toggle" id="create-folder-cancel">Cancel</button>
+              <button class="btn-toggle active" id="create-folder-confirm">
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rename Modal -->
+      <div class="modal-overlay" id="rename-modal">
+        <div class="modal glass">
+          <div class="modal-header">
+            <h2 id="rename-modal-title">Rename</h2>
+            <button class="btn-icon-sm" id="rename-close">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <input
+              type="text"
+              id="rename-input"
+              placeholder="New Name"
+              class="search-input"
+              style="margin-bottom: 16px"
+            />
+            <div style="display: flex; justify-content: flex-end; gap: 8px">
+              <button class="btn-toggle" id="rename-cancel">Cancel</button>
+              <button class="btn-toggle active" id="rename-confirm">
+                Rename
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Confirm Modal -->
+      <div class="modal-overlay" id="confirm-modal">
+        <div class="modal glass">
+          <div class="modal-header">
+            <h2 id="confirm-modal-title">Confirm Action</h2>
+            <button class="btn-icon-sm" id="confirm-close">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p
+              id="confirm-modal-message"
+              style="margin-bottom: 20px; color: var(--text-secondary)"
+            >
+              Are you sure?
+            </p>
+            <div style="display: flex; justify-content: flex-end; gap: 8px">
+              <button class="btn-toggle" id="confirm-cancel">Cancel</button>
+              <button
+                class="btn-toggle"
+                id="confirm-ok"
+                style="background: rgba(248, 113, 113, 0.2); color: #f87171"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Command Palette Modal -->
+      <div class="modal-overlay" id="command-palette-modal">
+        <div class="modal glass" style="max-width: 600px;">
+          <div class="modal-header">
+             <h2>Jump to Note</h2>
+             <button class="btn-icon-sm" id="command-palette-close">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+             </button>
+          </div>
+          <div class="modal-body" style="padding-top: 0;">
+            <input
+              type="text"
+              id="command-palette-input"
+              placeholder="Type to search..."
+              class="search-input"
+              style="margin-bottom: 12px; font-size: 16px; padding: 12px;"
+            />
+            <div id="command-palette-results" class="notes-list" style="max-height: 300px; overflow-y: auto;">
+               <!-- Results injected here -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Display Settings Modal -->
+      <div class="modal-overlay" id="display-settings-modal">
+        <div class="modal glass" style="max-width: 420px;">
+          <div class="modal-header">
+            <h2>Display Settings</h2>
+            <button class="btn-icon-sm" id="display-settings-close">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <!-- Opacity Control -->
+            <div class="settings-section">
+              <h3>Window Opacity</h3>
+              <div class="slider-container">
+                <input type="range" id="opacity-slider" min="30" max="100" value="100" class="slider" />
+                <span id="opacity-value">100%</span>
+              </div>
+            </div>
+
+            <!-- Snap to Corner -->
+            <div class="settings-section">
+              <h3>Snap to Corner</h3>
+              <div class="corner-grid">
+                <button class="corner-btn" data-corner="top-left" title="Top Left">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="8" height="8" rx="1"></rect>
+                    <path d="M3 15v6h6M21 3h-6M21 9v-6"></path>
+                  </svg>
+                </button>
+                <button class="corner-btn" data-corner="top-right" title="Top Right">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="13" y="3" width="8" height="8" rx="1"></rect>
+                    <path d="M3 3h6M3 9V3M21 15v6h-6"></path>
+                  </svg>
+                </button>
+                <button class="corner-btn" data-corner="bottom-left" title="Bottom Left">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="13" width="8" height="8" rx="1"></rect>
+                    <path d="M3 3v6h6M21 21h-6M21 15v6"></path>
+                  </svg>
+                </button>
+                <button class="corner-btn" data-corner="bottom-right" title="Bottom Right">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="13" y="13" width="8" height="8" rx="1"></rect>
+                    <path d="M21 3v6h-6M3 21h6M3 15v6"></path>
+                  </svg>
                 </button>
               </div>
             </div>
-            <div
-              style="
-                font-size: 11px;
-                color: var(--text-quaternary);
-                margin-top: 8px;
-              "
-            >
-              Click Record and press your desired key combination.
-            </div>
-          </div>
-          <div class="shortcut-section">
-            <h3>General</h3>
-            <div class="shortcut-row">
-              <kbd>Ctrl</kbd>+<kbd>S</kbd><span>Save note</span>
-            </div>
-            <div class="shortcut-row">
-              <kbd>Ctrl</kbd>+<kbd>N</kbd><span>New note</span>
-            </div>
-            <div class="shortcut-row">
-              <kbd>Ctrl</kbd>+<kbd>E</kbd><span>Toggle preview</span>
-            </div>
-            <div class="shortcut-row">
-              <kbd>Ctrl</kbd>+<kbd>/</kbd><span>Show shortcuts</span>
-            </div>
-            <div class="shortcut-row">
-              <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd
-              ><span>Global: Show app</span>
-            </div>
-          </div>
-          <div class="shortcut-section">
-            <h3>Formatting</h3>
-            <div class="shortcut-row">
-              <kbd>Ctrl</kbd>+<kbd>B</kbd><span>Bold</span>
-            </div>
-            <div class="shortcut-row">
-              <kbd>Ctrl</kbd>+<kbd>I</kbd><span>Italic</span>
-            </div>
-            <div class="shortcut-row">
-              <kbd>Ctrl</kbd>+<kbd>K</kbd><span>Link</span>
-            </div>
           </div>
         </div>
       </div>
+
+      <!-- Toast Container -->
+      <div class="toast-container" id="toast-container"></div>
+
+      <script src="build/marked.min.js"></script>
+      <script src="build/highlight.min.js"></script>
+      <script src="dist/renderer/app.js"></script>
     </div>
-
-    <!-- Create Folder Modal -->
-    <div class="modal-overlay" id="create-folder-modal">
-      <div class="modal glass">
-        <div class="modal-header">
-          <h2>New Folder</h2>
-          <button class="btn-icon-sm" id="create-folder-close">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-        <div class="modal-body">
-          <input
-            type="text"
-            id="create-folder-input"
-            placeholder="Folder Name"
-            class="search-input"
-            style="margin-bottom: 16px"
-          />
-          <div style="display: flex; justify-content: flex-end; gap: 8px">
-            <button class="btn-toggle" id="create-folder-cancel">Cancel</button>
-            <button class="btn-toggle active" id="create-folder-confirm">
-              Create
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Rename Modal -->
-    <div class="modal-overlay" id="rename-modal">
-      <div class="modal glass">
-        <div class="modal-header">
-          <h2 id="rename-modal-title">Rename</h2>
-          <button class="btn-icon-sm" id="rename-close">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-        <div class="modal-body">
-          <input
-            type="text"
-            id="rename-input"
-            placeholder="New Name"
-            class="search-input"
-            style="margin-bottom: 16px"
-          />
-          <div style="display: flex; justify-content: flex-end; gap: 8px">
-            <button class="btn-toggle" id="rename-cancel">Cancel</button>
-            <button class="btn-toggle active" id="rename-confirm">
-              Rename
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Confirm Modal -->
-    <div class="modal-overlay" id="confirm-modal">
-      <div class="modal glass">
-        <div class="modal-header">
-          <h2 id="confirm-modal-title">Confirm Action</h2>
-          <button class="btn-icon-sm" id="confirm-close">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-        <div class="modal-body">
-          <p
-            id="confirm-modal-message"
-            style="margin-bottom: 20px; color: var(--text-secondary)"
-          >
-            Are you sure?
-          </p>
-          <div style="display: flex; justify-content: flex-end; gap: 8px">
-            <button class="btn-toggle" id="confirm-cancel">Cancel</button>
-            <button
-              class="btn-toggle"
-              id="confirm-ok"
-              style="background: rgba(248, 113, 113, 0.2); color: #f87171"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Command Palette Modal -->
-    <div class="modal-overlay" id="command-palette-modal">
-      <div class="modal glass" style="max-width: 600px;">
-        <div class="modal-header">
-           <h2>Jump to Note</h2>
-           <button class="btn-icon-sm" id="command-palette-close">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-           </button>
-        </div>
-        <div class="modal-body" style="padding-top: 0;">
-          <input
-            type="text"
-            id="command-palette-input"
-            placeholder="Type to search..."
-            class="search-input"
-            style="margin-bottom: 12px; font-size: 16px; padding: 12px;"
-          />
-          <div id="command-palette-results" class="notes-list" style="max-height: 300px; overflow-y: auto;">
-             <!-- Results injected here -->
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Toast Container -->
-    <div class="toast-container" id="toast-container"></div>
-
-    <script src="build/marked.min.js"></script>
-    <script src="build/highlight.min.js"></script>
-    <script src="dist/renderer/app.js"></script>
   </body>
 </html>

@@ -5,6 +5,9 @@
 
 /* ============ Design Tokens ============ */
 :root {
+  /* Window Opacity (Linux workaround) */
+  --window-opacity: 1;
+  
   /* Glass Material - neutral dark grays */
   --glass-bg: rgba(24, 24, 24, 0.65);
   --glass-bg-lighter: rgba(36, 36, 36, 0.55);
@@ -85,7 +88,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
     "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
   overflow: hidden;
-  background: #0a0a0a;
+  background: transparent;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -97,6 +100,7 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
+  background: rgba(10, 10, 10, var(--window-opacity));
 }
 
 /* ============ Glass Base ============ */
@@ -104,11 +108,41 @@ body {
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  border: var(--rim-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--rim-highlight), var(--shadow-floating);
+  box-shadow: 
+    var(--rim-highlight), 
+    var(--shadow-floating),
+    /* visionOS-style outer glow */
+    0 0 0 0.5px rgba(255, 255, 255, 0.15),
+    0 0 20px -5px rgba(255, 255, 255, 0.05);
+  /* Light gradient border using pseudo-element */
+  position: relative;
   transform: translateZ(0);
   will-change: transform;
+}
+
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.05) 40%,
+    rgba(255, 255, 255, 0.02) 60%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 /* ============ Titlebar ============ */
@@ -759,12 +793,53 @@ body {
 
 .app.minimal-mode .editor-area {
   border-radius: 0;
-  padding: 32px;
+  padding: 12px;
+  border: none;
+  box-shadow: none;
 }
 
 .app.minimal-mode .main-content {
   padding: 0;
   gap: 0;
+}
+
+.app.minimal-mode .titlebar {
+  display: none;
+}
+
+.app.minimal-mode .editor-area.glass {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Exit minimal mode button - fixed in corner */
+.exit-minimal-btn {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s var(--ease-smooth);
+  z-index: 100;
+  -webkit-app-region: no-drag;
+}
+
+.exit-minimal-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+}
+
+.app.minimal-mode .exit-minimal-btn {
+  display: flex;
 }
 
 /* ============ Modal ============ */
@@ -1306,8 +1381,165 @@ kbd {
   font-weight: 500;
 }
 
+/* ============ Display Settings ============ */
+.settings-section {
+  margin-bottom: 20px;
+}
 
-/* Pinned Notes */
+.settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-section h3 {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-tertiary);
+  margin-bottom: 12px;
+}
+
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  outline: none;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--accent-blue);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.15s var(--ease-smooth);
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--accent-blue);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+#opacity-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  min-width: 40px;
+  text-align: right;
+}
+
+.corner-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.corner-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  background: var(--gaze-idle);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.2s var(--ease-smooth);
+}
+
+.corner-btn:hover {
+  background: var(--gaze-hover);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.corner-btn:active {
+  background: var(--gaze-active);
+  transform: scale(0.98);
+}
+
+.dock-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.dock-buttons .btn-toggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+.dock-buttons .btn-toggle svg {
+  flex-shrink: 0;
+}
+
+/* ============ Split View ============ */
+.split-view-container {
+  display: flex;
+  flex: 1;
+  gap: 12px;
+  min-width: 0;
+}
+
+.split-view-container .editor-container {
+  flex: 1;
+  min-width: 0;
+}
+
+.split-divider {
+  width: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  cursor: col-resize;
+  transition: background-color 0.2s var(--ease-smooth);
+}
+
+.split-divider:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ============ Note Actions ============ */
+.note-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.note-actions .btn-icon-sm {
+  color: var(--text-tertiary);
+  opacity: 0.8;
+  transition: all 0.2s var(--ease-smooth);
+}
+
+.note-actions .btn-icon-sm.active {
+  color: var(--accent-blue);
+  opacity: 1;
+}
+
+/* ============ Pinned Notes ============ */
 .note-item.pinned {
   border-left: 2px solid var(--accent-blue);
   background: rgba(var(--accent-blue-rgb), 0.05);
@@ -1321,8 +1553,738 @@ kbd {
   opacity: 0.8;
 }
 
+/* ============ Editor Preview ============ */
+.editor-preview {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  z-index: 1001;
+  pointer-events: none;
+}
+
+.editor-preview.show {
+  display: block;
+  pointer-events: auto;
+}
+
+/* ============ Keyboard Shortcuts ============ */
+.keyboard-shortcuts {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}
+
+.keyboard-shortcuts .shortcut {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  padding: 4px 0;
+}
+
+.keyboard-shortcuts .shortcut span {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* ============ Accessibility ============ */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: none;
+}
+
+/* ============ Focus Ring ============ */
+.focus-ring {
+  position: absolute;
+  pointer-events: none;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  transition: border-color 0.2s var(--ease-smooth);
+}
+
+.focus-ring.active {
+  border-color: transparent;
+}
+
+/* ============ Loading States ============ */
+.loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.loading::after {
+  content: "Loading...";
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============ Error States ============ */
+.error {
+  border-color: var(--accent-red);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.error::after {
+  content: "Error";
+  color: var(--accent-red);
+  font-size: 12px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============ Success States ============ */
+.success {
+  border-color: var(--accent-green);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.success::after {
+  content: "Success";
+  color: var(--accent-green);
+  font-size: 12px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============ Empty States ============ */
+.empty-state {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-quaternary);
+  font-size: 13px;
+}
+
+.empty-state::after {
+  content: "No items found";
+  color: var(--text-quaternary);
+  font-size: 12px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============ Responsive Design ============ */
+
+/* Small windows - reduce sidebar width */
+@media (max-width: 900px) {
+  .sidebar {
+    width: 220px;
+    min-width: 180px;
+    padding: 12px;
+  }
+
+  .main-content {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .editor-area {
+    padding: 16px;
+  }
+
+  .editor-header {
+    padding: 8px 12px;
+  }
+
+  .toolbar-btn {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+/* Very small windows - further reduce sidebar */
+@media (max-width: 700px) {
+  .sidebar {
+    width: 200px;
+    min-width: 160px;
+    padding: 10px;
+  }
+
+  .sidebar-header h2 {
+    font-size: 13px;
+  }
+
+  .note-item {
+    padding: 10px;
+  }
+
+  .note-item h3 {
+    font-size: 12px;
+  }
+
+  .editor-area {
+    padding: 12px;
+  }
+
+  .editor,
+  .preview {
+    font-size: 14px;
+  }
+
+  .editor-header {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .toolbar {
+    gap: 1px;
+    max-width: calc(100% - 120px);
+  }
+
+  .toolbar-btn {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  .editor-actions {
+    gap: 6px;
+  }
+
+  .btn-toggle {
+    padding: 5px 10px;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+}
+
+/* Medium-small windows - make toolbar more compact */
+@media (max-width: 550px) {
+  .editor-header {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+
+  .toolbar {
+    max-width: calc(100% - 90px);
+  }
+
+  .toolbar-btn {
+    width: 24px;
+    height: 24px;
+  }
+
+  .editor-actions {
+    gap: 4px;
+  }
+
+  .btn-toggle {
+    padding: 4px 6px;
+    font-size: 9px;
+  }
+}
+
+/* Hide toolbar when window is small */
+@media (max-width: 500px) {
+  .editor-header {
+    display: none;
+  }
+
+  .editor-container {
+    gap: 0;
+  }
+
+  .editor-area {
+    border-radius: 0;
+  }
+}
+
+/* Minimal width - hide some UI elements */
+@media (max-width: 600px) {
+  .sidebar {
+    width: 180px;
+    min-width: 140px;
+  }
+
+  .sidebar-section {
+    margin-bottom: 10px;
+  }
+
+  .note-item {
+    padding: 8px;
+  }
+
+  .note-actions {
+    opacity: 1;
+  }
+
+  .editor-header {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  .toolbar {
+    max-width: calc(100% - 100px);
+  }
+
+  .toolbar-btn {
+    width: 26px;
+    height: 26px;
+  }
+
+  .toolbar-divider {
+    display: none;
+  }
+
+  .editor-actions {
+    gap: 4px;
+  }
+
+  .btn-toggle {
+    padding: 4px 8px;
+    font-size: 9px;
+  }
+
+  .titlebar {
+    padding: 0 10px;
+  }
+
+  .app-title {
+    font-size: 12px;
+  }
+
+  .window-btn {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+/* Very small windows - minimal UI */
+@media (max-width: 400px) {
+  .sidebar {
+    width: 0;
+    min-width: 0;
+    padding: 0;
+    border: none;
+    opacity: 0;
+    overflow: hidden;
+  }
+
+  /* Hide sidebar toggle button when sidebar is auto-collapsed */
+  #toggle-sidebar-btn {
+    display: none;
+  }
+
+  .main-content {
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .editor-area {
+    padding: 8px;
+  }
+
+  .titlebar {
+    padding: 0 8px;
+    height: 36px;
+  }
+
+  .app-title {
+    font-size: 11px;
+  }
+
+  .window-btn {
+    width: 24px;
+    height: 24px;
+  }
+
+  .btn-icon-sm {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* Tiny windows - ultra minimal */
+@media (max-width: 300px) {
+  .titlebar-drag {
+    gap: 6px;
+  }
+
+  .app-title {
+    display: none;
+  }
+
+  #save-indicator {
+    display: none;
+  }
+
+  .editor-area {
+    padding: 4px;
+  }
+
+  .editor,
+  .preview {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}
+
+/* Ensure text doesn't overflow in small windows */
+@media (max-width: 800px) {
+  .note-item h3 {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .folder-item {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .search-input {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+
+/* Horizontal layout for very wide windows */
+@media (min-width: 1600px) {
+  .sidebar {
+    width: 300px;
+    max-width: 360px;
+  }
+
+  .editor-area {
+    padding: 32px;
+  }
+
+  .editor,
+  .preview {
+    font-size: 16px;
+  }
+}
+
+/* Keyboard Navigation Focus */
+.note-item.focused {
+  background: var(--gaze-hover);
+  border-color: var(--accent-blue-glow);
+  outline: 1px solid var(--accent-blue-glow);
+}
+
+/* Sort Options UI */
+.search-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.search-input {
+  flex: 1;
+}
+
+.sort-wrapper {
+  position: relative;
+  /* width: 32px;  Let it size by content if needed, but here it's icon only */
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sort-trigger-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.sort-trigger-btn:hover,
+.sort-trigger-btn.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  width: 200px;
+  background: rgba(30, 30, 30, 0.85); /* Fallback */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 6px;
+  z-index: 1000;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  display: none;
+  flex-direction: column;
+}
+
+.dropdown-menu.show {
+  display: flex;
+  animation: dropdownFadeIn 0.2s ease;
+}
+
+@keyframes dropdownFadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-item {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.dropdown-item.active {
+  background: rgba(var(--accent-blue-rgb), 0.15);
+  color: var(--accent-blue);
+  font-weight: 500;
+}
+
+/* ============ Display Settings ============ */
+.settings-section {
+  margin-bottom: 20px;
+}
+
+.settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-section h3 {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-tertiary);
+  margin-bottom: 12px;
+}
+
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  outline: none;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--accent-blue);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.15s var(--ease-smooth);
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--accent-blue);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+#opacity-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  min-width: 40px;
+  text-align: right;
+}
+
+.corner-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.corner-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  background: var(--gaze-idle);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.2s var(--ease-smooth);
+}
+
+.corner-btn:hover {
+  background: var(--gaze-hover);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.corner-btn:active {
+  background: var(--gaze-active);
+  transform: scale(0.98);
+}
+
+.dock-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.dock-buttons .btn-toggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+.dock-buttons .btn-toggle svg {
+  flex-shrink: 0;
+}
+
+/* ============ Split View ============ */
+.split-view-container {
+  display: flex;
+  flex: 1;
+  gap: 12px;
+  min-width: 0;
+}
+
+.split-view-container .editor-container {
+  flex: 1;
+  min-width: 0;
+}
+
+.split-divider {
+  width: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  cursor: col-resize;
+  transition: background-color 0.2s var(--ease-smooth);
+}
+
+.split-divider:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ============ Note Actions ============ */
+.note-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.note-actions .btn-icon-sm {
+  color: var(--text-tertiary);
+  opacity: 0.8;
+  transition: all 0.2s var(--ease-smooth);
+}
+
 .note-actions .btn-icon-sm.active {
   color: var(--accent-blue);
   opacity: 1;
 }
 
+/* ============ Pinned Notes ============ */
+.note-item.pinned {
+  border-left: 2px solid var(--accent-blue);
+  background: rgba(var(--accent-blue-rgb), 0.05);
+}
+
+.pin-indicator {
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent-blue);
+  margin-left: 6px;
+  opacity: 0.8;
+}
+
+/* ============ Editor Preview ============ */
+.editor-preview {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  z-index: 1001;
+  pointer-events: none;
+}
+
+.editor-preview.show {
+  display: block;
+  pointer-events: auto;
+}
+
+/* ============ Keyboard Shortcuts ============ */
+.keyboard-shortcuts {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}
+
+.keyboard-shortcuts .shortcut {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  padding: 4px 0;
+}
+
+.keyboard-shortcuts .shortcut span {
+  font-size: 11px;
+  color: var(--text-secondary);
+}

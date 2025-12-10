@@ -46,7 +46,9 @@ let config: any = {
   windowBounds: { width: 1200, height: 800 },
   lastNoteId: null as string | null,
   lastFolder: null as string | null,
-  pinnedNotes: [] as string[]
+  pinnedNotes: [] as string[],
+  minimalModeBounds: { width: 400, height: 300 } as { width: number, height: number, x?: number, y?: number },
+  windowOpacity: 1.0
 };
 
 function loadConfig() {
@@ -130,6 +132,15 @@ function createWindow(): void {
 
   mainWindow.loadFile(path.join(__dirname, '../index.html'));
 
+  // Set initial window opacity via CSS variable (Linux workaround)
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (mainWindow && config.windowOpacity !== 1.0) {
+      mainWindow.webContents.executeJavaScript(
+        `document.documentElement.style.setProperty('--window-opacity', '${config.windowOpacity}')`
+      );
+    }
+  });
+
   mainWindow.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault();
@@ -190,7 +201,12 @@ function registerGlobalShortcut(key: string): boolean {
     const ret = globalShortcut.register(key, () => {
       if (mainWindow) {
         if (mainWindow.isVisible()) {
-          mainWindow.hide();
+          // In minimal mode, just focus the window instead of hiding
+          if (isInMinimalMode) {
+            mainWindow.focus();
+          } else {
+            mainWindow.hide();
+          }
         } else {
           mainWindow.show();
           mainWindow.focus();
@@ -645,6 +661,7 @@ ipcMain.handle('save-last-note', (_event, noteId: string | null, folder: string 
   scheduleSaveConfig();
   return { success: true };
 });
+
 ipcMain.handle('save-quick-note', async (_event, content: string) => {
   try {
       if (!content.trim()) return { success: false, error: 'Empty content' };
@@ -665,4 +682,147 @@ ipcMain.handle('save-quick-note', async (_event, content: string) => {
       console.error('Error saving quick note:', error);
       return { success: false, error: String(error) };
   }
+});
+
+// ============ P4: Window & Display Features ============
+
+let normalBoundsBeforeMinimal: Electron.Rectangle | null = null;
+let isInMinimalMode = false;
+
+ipcMain.handle('enter-minimal-mode', async () => {
+  if (!mainWindow) return { success: false };
+  
+  // Save current bounds to restore later
+  normalBoundsBeforeMinimal = mainWindow.getBounds();
+  isInMinimalMode = true;
+  
+  // Use saved minimal bounds or defaults (small window)
+  const { width, height, x, y } = config.minimalModeBounds || { width: 400, height: 300 };
+  
+  // Set minimum size for minimal mode
+  mainWindow.setMinimumSize(200, 150);
+  
+  // Position: use saved position or center on screen
+  const { screen } = require('electron');
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width: screenWidth, height: screenHeight, x: screenX, y: screenY } = primaryDisplay.workArea;
+  
+  const newX = x !== undefined ? x : screenX + Math.round((screenWidth - width) / 2);
+  const newY = y !== undefined ? y : screenY + Math.round((screenHeight - height) / 2);
+  
+  mainWindow.setBounds({
+    width: width || 400,
+    height: height || 300,
+    x: newX,
+    y: newY
+  });
+  
+  return { success: true };
+});
+
+ipcMain.handle('exit-minimal-mode', async () => {
+  if (!mainWindow) return { success: false };
+  
+  isInMinimalMode = false;
+  
+  // Save current minimal mode bounds before exiting
+  const currentBounds = mainWindow.getBounds();
+  config.minimalModeBounds = {
+    width: currentBounds.width,
+    height: currentBounds.height,
+    x: currentBounds.x,
+    y: currentBounds.y
+  };
+  scheduleSaveConfig();
+  
+  // Restore to normal bounds
+  if (normalBoundsBeforeMinimal) {
+    mainWindow.setMinimumSize(300, 200);
+    mainWindow.setBounds(normalBoundsBeforeMinimal);
+    normalBoundsBeforeMinimal = null;
+  }
+  
+  return { success: true };
+});
+
+ipcMain.handle('save-minimal-bounds', async () => {
+  if (!mainWindow || !isInMinimalMode) return { success: false };
+  
+  const bounds = mainWindow.getBounds();
+  config.minimalModeBounds = {
+    width: bounds.width,
+    height: bounds.height,
+    x: bounds.x,
+    y: bounds.y
+  };
+  scheduleSaveConfig();
+  
+  return { success: true };
+});
+
+ipcMain.handle('get-window-opacity', () => {
+  return config.windowOpacity;
+});
+
+ipcMain.handle('set-window-opacity', async (_event, opacity: number) => {
+  if (!mainWindow) return { success: false };
+  
+  const clampedOpacity = Math.max(0.3, Math.min(1.0, opacity));
+  
+  // Use CSS variable for Linux compatibility (native setOpacity doesn't work on Linux)
+  mainWindow.webContents.executeJavaScript(
+    `document.documentElement.style.setProperty('--window-opacity', '${clampedOpacity}')`
+  );
+  
+  config.windowOpacity = clampedOpacity;
+  scheduleSaveConfig();
+  
+  return { success: true, opacity: clampedOpacity };
+});
+
+ipcMain.handle('snap-to-corner', async (_event, corner: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right') => {
+  if (!mainWindow) return { success: false };
+  
+  if (mainWindow.isMaximized()) {
+    mainWindow.unmaximize();
+  }
+  
+  const { screen } = require('electron');
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width: screenWidth, height: screenHeight, x: screenX, y: screenY } = primaryDisplay.workArea;
+  
+  const bounds = mainWindow.getBounds();
+  const padding = 20;
+  
+  let newX = screenX;
+  let newY = screenY;
+  
+  switch (corner) {
+    case 'top-left':
+      newX = screenX + padding;
+      newY = screenY + padding;
+      break;
+    case 'top-right':
+      newX = screenX + screenWidth - bounds.width - padding;
+      newY = screenY + padding;
+      break;
+    case 'bottom-left':
+      newX = screenX + padding;
+      newY = screenY + screenHeight - bounds.height - padding;
+      break;
+    case 'bottom-right':
+      newX = screenX + screenWidth - bounds.width - padding;
+      newY = screenY + screenHeight - bounds.height - padding;
+      break;
+  }
+  
+  mainWindow.setBounds({ x: newX, y: newY, width: bounds.width, height: bounds.height });
+  
+  return { success: true };
+});
+
+ipcMain.handle('get-display-info', async () => {
+  const { screen } = require('electron');
+  const primaryDisplay = screen.getPrimaryDisplay();
+  return primaryDisplay.workArea;
 });

@@ -43,11 +43,11 @@
 
 ## 🔵 P4: Window & Display
 
-- [ ] Resizable Minimal Mode - Let users resize the minimal mode window and remember the size
-- [ ] Opacity Slider - Adjust window transparency to see through to IDE
-- [ ] Pin to Corner - Quick snap to top-left, top-right, bottom-left, bottom-right with adjustable sizes
-- [ ] Dock to Screen Edge - Slide window to edge, becomes slim strip; hover to expand
-- [ ] Split View - Show two notes side by side within the same window
+- [x] Resizable Minimal Mode - Let users resize the minimal mode window and remember the size
+- [x] Opacity Slider - Adjust window transparency to see through to IDE
+- [x] Pin to Corner - Quick snap to top-left, top-right, bottom-left, bottom-right with adjustable sizes
+- [x] Dock to Screen Edge - Slide window to edge, becomes slim strip; hover to expand
+- [x] Split View - Show two notes side by side within the same window
 
 ---
 

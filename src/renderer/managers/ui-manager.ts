@@ -40,7 +40,15 @@ export class UIManager {
     commandPaletteInput: document.getElementById('command-palette-input') as HTMLInputElement,
     commandPaletteResults: document.getElementById('command-palette-results') as HTMLDivElement,
     commandPaletteClose: document.getElementById('command-palette-close') as HTMLButtonElement,
+
+    // Display Settings
+    displaySettingsModal: document.getElementById('display-settings-modal') as HTMLDivElement,
+    opacitySlider: document.getElementById('opacity-slider') as HTMLInputElement,
+    opacityValue: document.getElementById('opacity-value') as HTMLSpanElement,
   };
+
+  private isMinimalMode = false;
+  private minimalBoundsSaveTimer: number | null = null;
 
   constructor() {}
 
@@ -50,7 +58,6 @@ export class UIManager {
     toast.textContent = message;
     this.elements.toastContainer.appendChild(toast);
     
-    // Use double RAF for smoother animation start
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         toast.classList.add('show');
@@ -68,15 +75,53 @@ export class UIManager {
   }
 
   async toggleMinimalMode(isActive: boolean) {
+    this.isMinimalMode = isActive;
+    
     if (isActive) {
+      await window.electron.enterMinimalMode();
       this.elements.appContainer.classList.add('minimal-mode');
       this.elements.minimalModeBtn.classList.add('active');
       await window.electron.setAlwaysOnTop(true);
+      
+      this.setupMinimalModeResizeListener();
     } else {
+      // Save bounds before exiting
+      await window.electron.saveMinimalBounds();
+      await window.electron.exitMinimalMode();
       this.elements.appContainer.classList.remove('minimal-mode');
       this.elements.minimalModeBtn.classList.remove('active');
       await window.electron.setAlwaysOnTop(false);
+      
+      this.removeMinimalModeResizeListener();
     }
+  }
+
+  private resizeHandler = () => {
+    if (!this.isMinimalMode) return;
+    
+    if (this.minimalBoundsSaveTimer) {
+      clearTimeout(this.minimalBoundsSaveTimer);
+    }
+    
+    this.minimalBoundsSaveTimer = window.setTimeout(() => {
+      window.electron.saveMinimalBounds();
+    }, 500);
+  };
+
+  private setupMinimalModeResizeListener() {
+    window.addEventListener('resize', this.resizeHandler);
+  }
+
+  private removeMinimalModeResizeListener() {
+    window.removeEventListener('resize', this.resizeHandler);
+    if (this.minimalBoundsSaveTimer) {
+      clearTimeout(this.minimalBoundsSaveTimer);
+      this.minimalBoundsSaveTimer = null;
+    }
+  }
+
+  isInMinimalMode(): boolean {
+    return this.isMinimalMode;
   }
 
   updateSaveIndicator(status: 'saving' | 'saved' | 'error', errorMsg?: string) {
@@ -314,4 +359,3 @@ export class UIManager {
     });
   }
 }
-
