@@ -209,21 +209,21 @@
 - [x] 10. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [-] 11. Implement System Tray
-  - [ ] 11.1 Set up system tray with icon
+- [ ] 11. Implement System Tray
+  - [x] 11.1 Set up system tray with icon
     - Create tray icon from build/icon.png
     - Set tooltip "MDed - Markdown Editor"
     - _Requirements: 4.1_
-  - [ ] 11.2 Implement tray click handler
+  - [x] 11.2 Implement tray click handler
     - Toggle main window visibility on click
     - _Requirements: 4.2_
-  - [ ] 11.3 Implement tray context menu
+  - [x] 11.3 Implement tray context menu
     - Add "Show" and "Quit" menu items
     - Handle menu item clicks
     - _Requirements: 4.3, 4.4_
 
-- [ ] 12. Implement Global Shortcuts
-  - [ ] 12.1 Create ShortcutManager struct
+- [-] 12. Implement Global Shortcuts
+  - [-] 12.1 Create ShortcutManager struct
     - Track registered shortcuts
     - _Requirements: 7.1_
   - [ ] 12.2 Register toggle shortcut on startup

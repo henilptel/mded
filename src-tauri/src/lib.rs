@@ -4,6 +4,7 @@ pub mod commands;
 pub mod config;
 pub mod filesystem;
 pub mod models;
+pub mod tray;
 pub mod window;
 
 use config::ConfigManager;
@@ -45,6 +46,10 @@ pub fn run() {
             app.manage(filesystem);
             app.manage(config_manager);
             app.manage(window_manager);
+            
+            // Set up system tray
+            tray::setup_tray(app.handle())
+                .expect("Failed to setup system tray");
             
             #[cfg(debug_assertions)]
             {
