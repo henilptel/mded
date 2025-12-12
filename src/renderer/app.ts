@@ -576,6 +576,18 @@ document.getElementById('undo-btn')?.addEventListener('click', () => { document.
 document.getElementById('redo-btn')?.addEventListener('click', () => { document.execCommand('redo'); editorManager.updatePreview(); });
 
 // Keyboard Shortcuts
+shortcutManager.registerCtrl('z', (e) => {
+    e.preventDefault();
+    document.execCommand('undo');
+    editorManager.updatePreview();
+});
+
+shortcutManager.registerCtrl('y', (e) => {
+    e.preventDefault();
+    document.execCommand('redo');
+    editorManager.updatePreview();
+});
+
 shortcutManager.registerCtrl('s', (e) => {
     e.preventDefault();
     saveCurrentNote().then(() => ui.showToast('Saved', 'success'));

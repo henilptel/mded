@@ -83,7 +83,11 @@
   background: transparent;
 }
 
-/* ============ Body ============ */
+/* ============ HTML & Body ============ */
+html {
+  background: transparent;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
     "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
