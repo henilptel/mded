@@ -309,29 +309,29 @@
     - Update tsconfig.json paths
     - _Requirements: 1.4_
 
-- [ ] 18. Implement Event Emission
-  - [ ] 18.1 Emit refresh-notes event on external note creation
+- [x] 18. Implement Event Emission
+  - [x] 18.1 Emit refresh-notes event on external note creation
     - Emit from clipboard capture handler
     - Emit from quick note save handler
     - _Requirements: 22.1_
-  - [ ] 18.2 Emit open-file event on file association
+  - [x] 18.2 Emit open-file event on file association
     - Emit from single-instance handler
     - Emit on startup with file argument
     - _Requirements: 22.2_
 
-- [ ] 19. Configure Build Outputs
-  - [ ] 19.1 Configure Windows build
+- [x] 19. Configure Build Outputs
+  - [x] 19.1 Configure Windows build
     - Set up NSIS installer
     - Configure portable executable
     - _Requirements: 21.1_
-  - [ ] 19.2 Configure macOS build
+  - [x] 19.2 Configure macOS build
     - Set up DMG bundle
     - Configure .md file association
     - _Requirements: 21.2_
-  - [ ] 19.3 Configure Linux build
+  - [x] 19.3 Configure Linux build
     - Set up AppImage and DEB packages
     - Create desktop file for .md association
     - _Requirements: 21.3_
 
-- [ ] 20. Final Checkpoint - Ensure all tests pass
+- [x] 20. Final Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.

@@ -1,0 +1,22 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=MDed
+GenericName=Markdown Editor
+Comment=Minimalistic Markdown Editor with VisionOS glassmorphism design
+Exec=mded %f
+Icon=mded
+Terminal=false
+Categories=Utility;TextEditor;Office;
+Keywords=markdown;editor;notes;text;
+StartupWMClass=mded
+MimeType=text/markdown;text/x-markdown;
+Actions=new-note;quick-note;
+
+[Desktop Action new-note]
+Name=New Note
+Exec=mded --new-note
+
+[Desktop Action quick-note]
+Name=Quick Note
+Exec=mded --quick-note

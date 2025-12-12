@@ -34,23 +34,63 @@
     "icon": [
       "icons/icon.png"
     ],
+    "resources": [],
+    "copyright": "Copyright © 2024 MDed",
+    "shortDescription": "Minimalistic Markdown Editor",
+    "longDescription": "MDed is a minimalistic markdown editor with VisionOS glassmorphism design. Features include system tray integration, global shortcuts, quick note capture, and cross-platform support.",
+    "category": "Utility",
     "windows": {
       "nsis": {
-        "installMode": "perMachine"
+        "installMode": "perMachine",
+        "installerIcon": "icons/icon.png",
+        "displayLanguageSelector": false
       }
     },
     "macOS": {
-      "minimumSystemVersion": "10.13"
+      "minimumSystemVersion": "10.13",
+      "dmg": {
+        "appPosition": {
+          "x": 180,
+          "y": 170
+        },
+        "applicationFolderPosition": {
+          "x": 480,
+          "y": 170
+        },
+        "windowSize": {
+          "width": 660,
+          "height": 400
+        }
+      },
+      "frameworks": [],
+      "exceptionDomain": null,
+      "signingIdentity": null,
+      "providerShortName": null,
+      "entitlements": null
     },
     "linux": {
       "deb": {
-        "desktopTemplate": null
+        "depends": [],
+        "section": "editors",
+        "priority": "optional",
+        "desktopTemplate": "mded.desktop"
       },
       "appimage": {
         "bundleMediaFramework": false
+      },
+      "rpm": {
+        "depends": [],
+        "release": "1"
       }
     },
-    "category": "Utility"
+    "fileAssociations": [
+      {
+        "ext": ["md", "markdown"],
+        "mimeType": "text/markdown",
+        "description": "Markdown Document",
+        "role": "Editor"
+      }
+    ]
   },
   "plugins": {}
 }
