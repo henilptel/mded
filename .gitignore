@@ -1,5 +1,26 @@
+# Dependencies
 node_modules/
+
+# Build outputs
 dist/
+src-tauri/target/
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# Logs
 *.log
 npm-debug.log*
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# Tauri
+src-tauri/Cargo.lock
+
+# Lock files (keep one)
+package-lock.json
+bun.lock

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "MDed",
+  "version": "2.0.0",
+  "identifier": "com.mded.app",
+  "build": {
+    "beforeBuildCommand": "pnpm build",
+    "beforeDevCommand": "pnpm dev:frontend",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "MDed",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 300,
+        "minHeight": 200,
+        "decorations": false,
+        "transparent": true,
+        "resizable": true,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/icon.png"
+    ],
+    "windows": {
+      "nsis": {
+        "oneClick": false,
+        "allowToChangeInstallationDirectory": true
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.13"
+    },
+    "linux": {
+      "desktop": {
+        "categories": ["Utility", "TextEditor"]
+      }
+    }
+  },
+  "plugins": {
+    "autostart": {
+      "macOSLaunchAgent": true
+    },
+    "global-shortcut": {},
+    "notification": {},
+    "clipboard-manager": {},
+    "single-instance": {}
+  }
+}

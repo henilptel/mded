@@ -1,0 +1,357 @@
+# Implementation Plan
+
+- [x] 1. Initialize Tauri 2.x Project
+
+
+
+
+
+
+
+  - [x] 1.1 Create new Tauri 2.x project with pnpm
+
+
+
+
+
+
+
+    - Initialize project with `pnpm create tauri-app`
+    - Configure for TypeScript frontend with Vite
+
+
+    - _Requirements: 1.1, 1.2_
+  - [ ] 1.2 Configure tauri.conf.json for frameless transparent window
+    - Set decorations: false, transparent: true
+
+
+    - Configure minimum size 300x200
+    - Set up window title and identifier
+    - _Requirements: 2.1, 2.2_
+
+
+  - [ ] 1.3 Add required Tauri plugins
+    - Add tauri-plugin-autostart, tauri-plugin-global-shortcut
+    - Add tauri-plugin-notification, tauri-plugin-clipboard-manager
+    - Add tauri-plugin-single-instance
+    - _Requirements: 3.1, 7.1, 16.1_
+  - [ ] 1.4 Copy frontend assets from Electron project
+    - Copy index.html, quick-note.html, styles.css
+    - Copy build/atom-one-dark.min.css
+    - Copy src/renderer/ directory structure
+    - _Requirements: 20.2, 20.3_
+
+- [ ] 2. Implement Core Rust Modules
+  - [ ] 2.1 Create data models and types (src-tauri/src/models.rs)
+    - Define FolderInfo, NoteInfo, ApiResult structs
+    - Define WindowBounds, DisplayInfo, LastNote structs
+    - Define Config struct with Default implementation
+    - _Requirements: 19.1, 19.2, 19.3_
+  - [ ] 2.2 Write property test for ApiResult serialization round-trip
+    - **Property: ApiResult serialization round-trip**
+    - **Validates: Requirements 19.2, 19.3**
+  - [ ] 2.3 Implement path validation (src-tauri/src/filesystem.rs)
+    - Create validate_path function that rejects "..", "/", "\\"
+    - Verify resolved path stays within base directory
+    - _Requirements: 13.1, 13.2, 13.3, 13.4_
+  - [ ] 2.4 Write property test for path traversal rejection
+    - **Property 5: Path Traversal Rejection**
+    - **Validates: Requirements 13.1, 13.2, 13.3**
+  - [ ] 2.5 Implement FileSystem struct and directory initialization
+    - Create notes_dir, assets_dir paths using platform data directory
+    - Implement ensure_directories to create folder structure
+    - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
+
+- [ ] 3. Implement Folder Operations
+  - [ ] 3.1 Implement list_folders command
+    - Return all directories in notes_dir
+    - Include "All Notes" virtual folder as first entry
+    - _Requirements: 10.1_
+  - [ ] 3.2 Write property test for folder listing includes virtual folder
+    - **Property 9: Folder Listing Includes Virtual Folder**
+    - **Validates: Requirements 10.1**
+  - [ ] 3.3 Implement create_folder command
+    - Validate folder name with path validator
+    - Create directory in notes_dir
+    - _Requirements: 10.2_
+  - [ ] 3.4 Implement delete_folder command
+    - Validate folder name
+    - Recursively remove folder and contents
+    - _Requirements: 10.3_
+  - [ ] 3.5 Write property test for folder deletion removes all contents
+    - **Property 11: Folder Deletion Removes All Contents**
+    - **Validates: Requirements 10.3**
+  - [ ] 3.6 Implement rename_folder command
+    - Validate both old and new names
+    - Rename directory preserving contents
+    - _Requirements: 10.4_
+
+- [ ] 4. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+
+- [ ] 5. Implement Note Operations
+  - [ ] 5.1 Implement list_notes command
+    - List all .md files with metadata (id, title, modified, created, folder)
+    - Support optional folder filter
+    - Include pinned status from config
+    - _Requirements: 11.1, 11.2_
+  - [ ] 5.2 Write property test for pinned notes ordering
+    - **Property 8: Pinned Notes Ordering**
+    - **Validates: Requirements 12.4**
+  - [ ] 5.3 Implement read_note command
+    - Validate note_id and folder
+    - Read and return file content
+    - _Requirements: 11.3_
+  - [ ] 5.4 Implement save_note command
+    - Validate note_id and folder
+    - Write content to file
+    - _Requirements: 11.4_
+  - [ ] 5.5 Write property test for note content round-trip
+    - **Property 1: Note Content Round-Trip**
+    - **Validates: Requirements 11.3, 11.4**
+  - [ ] 5.6 Implement create_note command
+    - Generate UUID-based filename (note-{uuid}.md)
+    - Create file with default content "# New Note\n\n"
+    - _Requirements: 11.5_
+  - [ ] 5.7 Write property test for note creation generates UUID
+    - **Property 10: Note Creation Generates UUID**
+    - **Validates: Requirements 11.5**
+  - [ ] 5.8 Implement delete_note command
+    - Validate and remove file
+    - Update pinned_notes in config if necessary
+    - _Requirements: 11.6_
+  - [ ] 5.9 Implement rename_note command
+    - Validate old and new names
+    - Rename file, update pinned_notes references
+    - _Requirements: 11.7_
+  - [ ] 5.10 Implement move_note command
+    - Validate source and target folders
+    - Move file preserving content
+    - _Requirements: 11.8_
+  - [ ] 5.11 Write property test for note move preserves content
+    - **Property 12: Note Move Preserves Content**
+    - **Validates: Requirements 11.8**
+
+- [ ] 6. Implement Note Pinning and Ordering
+  - [ ] 6.1 Implement toggle_pin_note command
+    - Add/remove note from pinned_notes list in config
+    - Return new pinned status
+    - _Requirements: 12.1_
+  - [ ] 6.2 Write property test for pin toggle idempotence
+    - **Property 13: Pin Toggle Idempotence**
+    - **Validates: Requirements 12.1**
+  - [ ] 6.3 Implement get_note_order command
+    - Read and return note-order.json content
+    - Return empty map if file doesn't exist
+    - _Requirements: 12.2_
+  - [ ] 6.4 Implement save_note_order command
+    - Write ordering to note-order.json
+    - _Requirements: 12.3_
+  - [ ] 6.5 Write property test for note order round-trip
+    - **Property 2: Note Order Round-Trip**
+    - **Validates: Requirements 12.2, 12.3**
+
+- [ ] 7. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 8. Implement Config Module
+  - [ ] 8.1 Create ConfigManager with load/save functionality
+    - Implement Default trait for Config
+    - Load config merging with defaults
+    - _Requirements: 17.2_
+  - [ ] 8.2 Write property test for config merge preserves defaults
+    - **Property 16: Config Merge Preserves Defaults**
+    - **Validates: Requirements 17.2**
+  - [ ] 8.3 Implement debounced config saving
+    - Schedule save with 1 second delay
+    - Cancel previous timer on new changes
+    - _Requirements: 17.1_
+  - [ ] 8.4 Implement get_last_note and save_last_note commands
+    - Return/save last opened note ID and folder
+    - _Requirements: 17.3, 17.4_
+  - [ ] 8.5 Implement get_global_shortcut and set_global_shortcut commands
+    - Return/update global shortcut in config
+    - Re-register shortcut on change
+    - _Requirements: 7.4_
+  - [ ] 8.6 Write property test for shortcut persistence
+    - **Property: Shortcut configuration round-trip**
+    - **Validates: Requirements 7.4**
+
+
+- [ ] 9. Implement Window Management
+  - [ ] 9.1 Create WindowManager struct
+    - Track normal_bounds and is_minimal_mode state
+    - _Requirements: 5.1, 5.2_
+  - [ ] 9.2 Implement window control commands (minimize, maximize, close)
+    - minimize_window: minimize the window
+    - maximize_window: toggle maximize state
+    - close_window: hide window instead of closing
+    - _Requirements: 2.5_
+  - [ ] 9.3 Implement enter_minimal_mode command
+    - Save current bounds
+    - Set always-on-top, resize to minimal bounds
+    - _Requirements: 5.1_
+  - [ ] 9.4 Implement exit_minimal_mode command
+    - Save minimal bounds
+    - Restore normal bounds, disable always-on-top
+    - _Requirements: 5.2_
+  - [ ] 9.5 Write property test for minimal mode bounds isolation
+    - **Property 17: Minimal Mode Bounds Isolation**
+    - **Validates: Requirements 5.3**
+  - [ ] 9.6 Implement save_minimal_bounds command
+    - Persist current bounds as minimal mode bounds
+    - _Requirements: 5.3_
+  - [ ] 9.7 Implement set_always_on_top command
+    - Set window always-on-top flag
+    - _Requirements: 5.1_
+  - [ ] 9.8 Implement window bounds persistence on move/resize
+    - Listen to window events
+    - Debounce and save bounds to config
+    - _Requirements: 2.3, 2.4_
+  - [ ] 9.9 Write property test for window bounds persistence round-trip
+    - **Property 3: Window Bounds Persistence Round-Trip**
+    - **Validates: Requirements 2.3, 2.4**
+  - [ ] 9.10 Implement get_window_opacity and set_window_opacity commands
+    - Clamp opacity between 0.3 and 1.0
+    - Apply via CSS variable for Linux compatibility
+    - _Requirements: 6.1, 6.2, 6.3_
+  - [ ] 9.11 Write property test for opacity clamping
+    - **Property 7: Opacity Clamping**
+    - **Validates: Requirements 6.1**
+  - [ ] 9.12 Write property test for opacity persistence round-trip
+    - **Property 4: Opacity Persistence Round-Trip**
+    - **Validates: Requirements 6.2, 6.3**
+  - [ ] 9.13 Implement get_display_info command
+    - Return primary monitor work area dimensions
+    - _Requirements: 18.1_
+
+- [ ] 10. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 11. Implement System Tray
+  - [ ] 11.1 Set up system tray with icon
+    - Create tray icon from build/icon.png
+    - Set tooltip "MDed - Markdown Editor"
+    - _Requirements: 4.1_
+  - [ ] 11.2 Implement tray click handler
+    - Toggle main window visibility on click
+    - _Requirements: 4.2_
+  - [ ] 11.3 Implement tray context menu
+    - Add "Show" and "Quit" menu items
+    - Handle menu item clicks
+    - _Requirements: 4.3, 4.4_
+
+- [ ] 12. Implement Global Shortcuts
+  - [ ] 12.1 Create ShortcutManager struct
+    - Track registered shortcuts
+    - _Requirements: 7.1_
+  - [ ] 12.2 Register toggle shortcut on startup
+    - Default: CommandOrControl+Shift+N
+    - Toggle window visibility on trigger
+    - _Requirements: 7.1_
+  - [ ] 12.3 Register clipboard capture shortcut
+    - Default: CommandOrControl+Alt+V
+    - Create note from clipboard, show notification
+    - _Requirements: 7.2_
+  - [ ] 12.4 Register quick note shortcut
+    - Default: CommandOrControl+Alt+N
+    - Open quick note popup window
+    - _Requirements: 7.3_
+  - [ ] 12.5 Write property test for shortcut registration error handling
+    - **Property: Invalid shortcut registration returns error**
+    - **Validates: Requirements 7.5**
+
+- [ ] 13. Implement Quick Note Window
+  - [ ] 13.1 Create quick note window configuration
+    - Frameless, transparent, always-on-top, skip taskbar
+    - Position in top-right corner of screen
+    - _Requirements: 8.1_
+  - [ ] 13.2 Implement save_quick_note command
+    - Save content as quick-{timestamp}.md
+    - Show notification, emit refresh-notes event
+    - _Requirements: 8.2_
+  - [ ] 13.3 Handle quick note window blur event
+    - Hide window on focus loss
+    - _Requirements: 8.3_
+
+
+- [ ] 14. Implement System Integration
+  - [ ] 14.1 Implement save_screenshot command
+    - Decode base64 PNG data
+    - Save to assets directory with unique filename
+    - Return file path for markdown reference
+    - _Requirements: 14.1, 14.2_
+  - [ ] 14.2 Write property test for screenshot save returns valid path
+    - **Property 15: Screenshot Save Returns Valid Path**
+    - **Validates: Requirements 14.1, 14.2**
+  - [ ] 14.3 Implement get_assets_path command
+    - Return absolute path to assets directory
+    - _Requirements: 14.3_
+  - [ ] 14.4 Implement read_external_file command
+    - Validate .md extension
+    - Read and return content, filename, path
+    - _Requirements: 15.1, 15.2, 15.3_
+  - [ ] 14.5 Write property test for external file extension validation
+    - **Property 14: External File Extension Validation**
+    - **Validates: Requirements 15.1**
+  - [ ] 14.6 Implement get_auto_start and set_auto_start commands
+    - Use tauri-plugin-autostart
+    - Configure to launch with --hidden flag
+    - _Requirements: 16.1, 16.2, 16.3_
+
+- [ ] 15. Implement Single Instance Lock
+  - [ ] 15.1 Configure tauri-plugin-single-instance
+    - Focus existing window on second instance
+    - _Requirements: 3.1, 3.3_
+  - [ ] 15.2 Handle file argument from second instance
+    - Emit open-file event with file path
+    - _Requirements: 3.2_
+
+- [ ] 16. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 17. Adapt Frontend for Tauri
+  - [ ] 17.1 Create Tauri API bridge (src/renderer/api.ts)
+    - Wrap @tauri-apps/api/core invoke calls
+    - Match existing window.electron interface
+    - Expose as window.electron for compatibility
+    - _Requirements: 20.1_
+  - [ ] 17.2 Update global.d.ts for Tauri types
+    - Declare window.electron interface
+    - _Requirements: 20.1_
+  - [ ] 17.3 Set up event listeners for backend events
+    - Listen for refresh-notes event
+    - Listen for open-file event
+    - _Requirements: 22.1, 22.2_
+  - [ ] 17.4 Update build configuration
+    - Configure Vite for Tauri
+    - Update tsconfig.json paths
+    - _Requirements: 1.4_
+
+- [ ] 18. Implement Event Emission
+  - [ ] 18.1 Emit refresh-notes event on external note creation
+    - Emit from clipboard capture handler
+    - Emit from quick note save handler
+    - _Requirements: 22.1_
+  - [ ] 18.2 Emit open-file event on file association
+    - Emit from single-instance handler
+    - Emit on startup with file argument
+    - _Requirements: 22.2_
+
+- [ ] 19. Configure Build Outputs
+  - [ ] 19.1 Configure Windows build
+    - Set up NSIS installer
+    - Configure portable executable
+    - _Requirements: 21.1_
+  - [ ] 19.2 Configure macOS build
+    - Set up DMG bundle
+    - Configure .md file association
+    - _Requirements: 21.2_
+  - [ ] 19.3 Configure Linux build
+    - Set up AppImage and DEB packages
+    - Create desktop file for .md association
+    - _Requirements: 21.3_
+
+- [ ] 20. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
