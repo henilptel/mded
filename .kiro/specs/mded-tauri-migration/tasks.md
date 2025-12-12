@@ -21,23 +21,23 @@
     - Copy src/renderer/ directory structure
     - _Requirements: 20.2, 20.3_
 
-- [ ] 2. Implement Core Rust Modules
-  - [ ] 2.1 Create data models and types (src-tauri/src/models.rs)
+- [x] 2. Implement Core Rust Modules
+  - [x] 2.1 Create data models and types (src-tauri/src/models.rs)
     - Define FolderInfo, NoteInfo, ApiResult structs
     - Define WindowBounds, DisplayInfo, LastNote structs
     - Define Config struct with Default implementation
     - _Requirements: 19.1, 19.2, 19.3_
-  - [ ] 2.2 Write property test for ApiResult serialization round-trip
+  - [x] 2.2 Write property test for ApiResult serialization round-trip
     - **Property: ApiResult serialization round-trip**
     - **Validates: Requirements 19.2, 19.3**
-  - [ ] 2.3 Implement path validation (src-tauri/src/filesystem.rs)
+  - [x] 2.3 Implement path validation (src-tauri/src/filesystem.rs)
     - Create validate_path function that rejects "..", "/", "\\"
     - Verify resolved path stays within base directory
     - _Requirements: 13.1, 13.2, 13.3, 13.4_
-  - [ ] 2.4 Write property test for path traversal rejection
+  - [x] 2.4 Write property test for path traversal rejection
     - **Property 5: Path Traversal Rejection**
     - **Validates: Requirements 13.1, 13.2, 13.3**
-  - [ ] 2.5 Implement FileSystem struct and directory initialization
+  - [x] 2.5 Implement FileSystem struct and directory initialization
     - Create notes_dir, assets_dir paths using platform data directory
     - Implement ensure_directories to create folder structure
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_

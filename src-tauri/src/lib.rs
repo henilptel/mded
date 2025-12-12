@@ -1,5 +1,8 @@
 use tauri::Manager;
 
+pub mod filesystem;
+pub mod models;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
