@@ -135,32 +135,32 @@
 - [x] 7. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [-] 8. Implement Config Module
-  - [ ] 8.1 Create ConfigManager with load/save functionality
+- [ ] 8. Implement Config Module
+  - [x] 8.1 Create ConfigManager with load/save functionality
     - Implement Default trait for Config
     - Load config merging with defaults
     - _Requirements: 17.2_
-  - [ ] 8.2 Write property test for config merge preserves defaults
+  - [x] 8.2 Write property test for config merge preserves defaults
     - **Property 16: Config Merge Preserves Defaults**
     - **Validates: Requirements 17.2**
-  - [ ] 8.3 Implement debounced config saving
+  - [x] 8.3 Implement debounced config saving
     - Schedule save with 1 second delay
     - Cancel previous timer on new changes
     - _Requirements: 17.1_
-  - [ ] 8.4 Implement get_last_note and save_last_note commands
+  - [x] 8.4 Implement get_last_note and save_last_note commands
     - Return/save last opened note ID and folder
     - _Requirements: 17.3, 17.4_
-  - [ ] 8.5 Implement get_global_shortcut and set_global_shortcut commands
+  - [x] 8.5 Implement get_global_shortcut and set_global_shortcut commands
     - Return/update global shortcut in config
     - Re-register shortcut on change
     - _Requirements: 7.4_
-  - [ ] 8.6 Write property test for shortcut persistence
+  - [x] 8.6 Write property test for shortcut persistence
     - **Property: Shortcut configuration round-trip**
     - **Validates: Requirements 7.4**
 
 
-- [ ] 9. Implement Window Management
-  - [ ] 9.1 Create WindowManager struct
+- [-] 9. Implement Window Management
+  - [-] 9.1 Create WindowManager struct
     - Track normal_bounds and is_minimal_mode state
     - _Requirements: 5.1, 5.2_
   - [ ] 9.2 Implement window control commands (minimize, maximize, close)

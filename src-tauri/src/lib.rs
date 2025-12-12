@@ -1,9 +1,11 @@
 use tauri::Manager;
 
 pub mod commands;
+pub mod config;
 pub mod filesystem;
 pub mod models;
 
+use config::ConfigManager;
 use filesystem::FileSystem;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -31,7 +33,12 @@ pub fn run() {
             filesystem.ensure_directories()
                 .expect("Failed to create application directories");
             
+            // Initialize config manager
+            let config_manager = ConfigManager::new(filesystem.config_file.clone())
+                .expect("Failed to initialize config manager");
+            
             app.manage(filesystem);
+            app.manage(config_manager);
             
             #[cfg(debug_assertions)]
             {
@@ -55,6 +62,10 @@ pub fn run() {
             commands::toggle_pin_note,
             commands::get_note_order,
             commands::save_note_order,
+            commands::get_last_note,
+            commands::save_last_note,
+            commands::get_global_shortcut,
+            commands::set_global_shortcut,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
