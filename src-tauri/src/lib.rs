@@ -45,6 +45,13 @@ pub fn run() {
             commands::create_folder,
             commands::delete_folder,
             commands::rename_folder,
+            commands::list_notes,
+            commands::read_note,
+            commands::save_note,
+            commands::create_note,
+            commands::delete_note,
+            commands::rename_note,
+            commands::move_note,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

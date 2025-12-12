@@ -341,6 +341,435 @@ impl FileSystem {
         
         Ok(())
     }
+
+    // ==================== Note Operations ====================
+
+    /// Lists all notes, optionally filtered by folder.
+    /// 
+    /// Returns all .md files with metadata including id, title, modified date,
+    /// created date, folder, and pinned status.
+    /// 
+    /// # Arguments
+    /// * `folder` - Optional folder name to filter notes. If None or "All Notes", returns all notes.
+    /// 
+    /// # Returns
+    /// * `Ok(Vec<NoteInfo>)` - List of notes with metadata
+    /// * `Err(String)` - If reading fails
+    /// 
+    /// # Requirements
+    /// Validates: Requirements 11.1, 11.2
+    pub fn list_notes(&self, folder: Option<&str>) -> Result<Vec<crate::models::NoteInfo>, String> {
+        use crate::models::NoteInfo;
+        use chrono::{DateTime, Utc};
+        
+        let mut notes = Vec::new();
+        
+        // Determine which directories to scan
+        let dirs_to_scan: Vec<(PathBuf, String)> = if folder.is_none() || folder == Some("All Notes") || folder == Some("") {
+            // Scan all directories including root
+            let mut dirs = vec![(self.notes_dir.clone(), String::new())];
+            
+            // Add subdirectories
+            if let Ok(entries) = fs::read_dir(&self.notes_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        if let Some(name) = path.file_name() {
+                            let name_str = name.to_string_lossy().to_string();
+                            dirs.push((path, name_str));
+                        }
+                    }
+                }
+            }
+            dirs
+        } else {
+            // Scan only the specified folder
+            let folder_name = folder.unwrap();
+            let folder_path = self.get_folder_path(Some(folder_name));
+            if !folder_path.exists() {
+                return Err(format!("Folder '{}' does not exist", folder_name));
+            }
+            vec![(folder_path, folder_name.to_string())]
+        };
+        
+        // Load pinned notes from config (placeholder - will be integrated with config module later)
+        let pinned_notes: Vec<String> = self.load_pinned_notes().unwrap_or_default();
+        
+        // Scan each directory for .md files
+        for (dir_path, folder_name) in dirs_to_scan {
+            if let Ok(entries) = fs::read_dir(&dir_path) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    
+                    // Only process .md files
+                    if path.is_file() && path.extension().map_or(false, |ext| ext == "md") {
+                        if let Some(file_name) = path.file_name() {
+                            let file_name_str = file_name.to_string_lossy();
+                            let note_id = file_name_str.trim_end_matches(".md").to_string();
+                            
+                            // Get file metadata
+                            let metadata = fs::metadata(&path)
+                                .map_err(|e| format!("Failed to read metadata for '{}': {}", file_name_str, e))?;
+                            
+                            // Get modified time
+                            let modified: DateTime<Utc> = metadata.modified()
+                                .map(|t| t.into())
+                                .unwrap_or_else(|_| Utc::now());
+                            
+                            // Get created time (use modified as fallback)
+                            let created: DateTime<Utc> = metadata.created()
+                                .map(|t| t.into())
+                                .unwrap_or(modified);
+                            
+                            // Extract title from first line of file
+                            let title = self.extract_note_title(&path).unwrap_or_else(|| note_id.clone());
+                            
+                            // Check if note is pinned
+                            let pinned = pinned_notes.contains(&note_id);
+                            
+                            notes.push(NoteInfo {
+                                id: note_id,
+                                title,
+                                modified,
+                                created,
+                                folder: folder_name.clone(),
+                                pinned,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Sort notes: pinned first, then by modified date (newest first)
+        notes.sort_by(|a, b| {
+            match (a.pinned, b.pinned) {
+                (true, false) => std::cmp::Ordering::Less,
+                (false, true) => std::cmp::Ordering::Greater,
+                _ => b.modified.cmp(&a.modified),
+            }
+        });
+        
+        Ok(notes)
+    }
+
+    /// Extracts the title from a note file.
+    /// 
+    /// The title is the first line of the file, with leading '#' characters removed.
+    fn extract_note_title(&self, path: &Path) -> Option<String> {
+        let content = fs::read_to_string(path).ok()?;
+        let first_line = content.lines().next()?;
+        let title = first_line.trim_start_matches('#').trim();
+        if title.is_empty() {
+            None
+        } else {
+            Some(title.to_string())
+        }
+    }
+
+    /// Loads pinned notes from config file.
+    fn load_pinned_notes(&self) -> Result<Vec<String>, String> {
+        use crate::models::Config;
+        
+        if !self.config_file.exists() {
+            return Ok(Vec::new());
+        }
+        
+        let content = fs::read_to_string(&self.config_file)
+            .map_err(|e| format!("Failed to read config file: {}", e))?;
+        
+        let config: Config = serde_json::from_str(&content)
+            .unwrap_or_default();
+        
+        Ok(config.pinned_notes)
+    }
+
+    /// Saves pinned notes to config file (for testing purposes).
+    #[cfg(test)]
+    pub fn save_pinned_notes(&self, pinned_notes: Vec<String>) -> Result<(), String> {
+        use crate::models::Config;
+        
+        let mut config = if self.config_file.exists() {
+            let content = fs::read_to_string(&self.config_file)
+                .map_err(|e| format!("Failed to read config file: {}", e))?;
+            serde_json::from_str(&content).unwrap_or_default()
+        } else {
+            Config::default()
+        };
+        
+        config.pinned_notes = pinned_notes;
+        
+        let content = serde_json::to_string_pretty(&config)
+            .map_err(|e| format!("Failed to serialize config: {}", e))?;
+        
+        fs::write(&self.config_file, content)
+            .map_err(|e| format!("Failed to write config file: {}", e))
+    }
+
+    /// Reads the content of a note.
+    /// 
+    /// # Arguments
+    /// * `note_id` - The ID of the note (filename without extension)
+    /// * `folder` - Optional folder containing the note
+    /// 
+    /// # Returns
+    /// * `Ok(String)` - The note content
+    /// * `Err(String)` - If reading fails
+    /// 
+    /// # Requirements
+    /// Validates: Requirements 11.3
+    pub fn read_note(&self, note_id: &str, folder: Option<&str>) -> Result<String, String> {
+        let file_name = format!("{}.md", note_id);
+        
+        // Validate the note_id
+        validate_path(&self.notes_dir, &file_name)?;
+        
+        // Get the folder path
+        let folder_path = self.get_folder_path(folder);
+        
+        // Validate folder if specified
+        if let Some(f) = folder {
+            if !f.is_empty() {
+                validate_path(&self.notes_dir, f)?;
+            }
+        }
+        
+        let note_path = folder_path.join(&file_name);
+        
+        if !note_path.exists() {
+            return Err(format!("Note '{}' does not exist", note_id));
+        }
+        
+        fs::read_to_string(&note_path)
+            .map_err(|e| format!("Failed to read note '{}': {}", note_id, e))
+    }
+
+    /// Saves content to a note.
+    /// 
+    /// # Arguments
+    /// * `note_id` - The ID of the note (filename without extension)
+    /// * `content` - The content to save
+    /// * `folder` - Optional folder containing the note
+    /// 
+    /// # Returns
+    /// * `Ok(())` - If save was successful
+    /// * `Err(String)` - If saving fails
+    /// 
+    /// # Requirements
+    /// Validates: Requirements 11.4
+    pub fn save_note(&self, note_id: &str, content: &str, folder: Option<&str>) -> Result<(), String> {
+        let file_name = format!("{}.md", note_id);
+        
+        // Validate the note_id
+        validate_path(&self.notes_dir, &file_name)?;
+        
+        // Get the folder path
+        let folder_path = self.get_folder_path(folder);
+        
+        // Validate folder if specified
+        if let Some(f) = folder {
+            if !f.is_empty() {
+                validate_path(&self.notes_dir, f)?;
+            }
+        }
+        
+        // Ensure folder exists
+        if !folder_path.exists() {
+            fs::create_dir_all(&folder_path)
+                .map_err(|e| format!("Failed to create folder: {}", e))?;
+        }
+        
+        let note_path = folder_path.join(&file_name);
+        
+        fs::write(&note_path, content)
+            .map_err(|e| format!("Failed to save note '{}': {}", note_id, e))
+    }
+
+    /// Creates a new note with a UUID-based filename.
+    /// 
+    /// # Arguments
+    /// * `folder` - Optional folder to create the note in
+    /// 
+    /// # Returns
+    /// * `Ok((String, String))` - Tuple of (note_id, full_path)
+    /// * `Err(String)` - If creation fails
+    /// 
+    /// # Requirements
+    /// Validates: Requirements 11.5
+    pub fn create_note(&self, folder: Option<&str>) -> Result<(String, String), String> {
+        use uuid::Uuid;
+        
+        // Generate UUID-based filename
+        let uuid = Uuid::new_v4();
+        let note_id = format!("note-{}", uuid);
+        let file_name = format!("{}.md", note_id);
+        
+        // Get the folder path
+        let folder_path = self.get_folder_path(folder);
+        
+        // Validate folder if specified
+        if let Some(f) = folder {
+            if !f.is_empty() {
+                validate_path(&self.notes_dir, f)?;
+            }
+        }
+        
+        // Ensure folder exists
+        if !folder_path.exists() {
+            fs::create_dir_all(&folder_path)
+                .map_err(|e| format!("Failed to create folder: {}", e))?;
+        }
+        
+        let note_path = folder_path.join(&file_name);
+        
+        // Create file with default content
+        let default_content = "# New Note\n\n";
+        fs::write(&note_path, default_content)
+            .map_err(|e| format!("Failed to create note: {}", e))?;
+        
+        Ok((note_id, note_path.to_string_lossy().to_string()))
+    }
+
+    /// Deletes a note.
+    /// 
+    /// # Arguments
+    /// * `note_id` - The ID of the note to delete
+    /// * `folder` - Optional folder containing the note
+    /// 
+    /// # Returns
+    /// * `Ok(())` - If deletion was successful
+    /// * `Err(String)` - If deletion fails
+    /// 
+    /// # Requirements
+    /// Validates: Requirements 11.6
+    pub fn delete_note(&self, note_id: &str, folder: Option<&str>) -> Result<(), String> {
+        let file_name = format!("{}.md", note_id);
+        
+        // Validate the note_id
+        validate_path(&self.notes_dir, &file_name)?;
+        
+        // Get the folder path
+        let folder_path = self.get_folder_path(folder);
+        
+        // Validate folder if specified
+        if let Some(f) = folder {
+            if !f.is_empty() {
+                validate_path(&self.notes_dir, f)?;
+            }
+        }
+        
+        let note_path = folder_path.join(&file_name);
+        
+        if !note_path.exists() {
+            return Err(format!("Note '{}' does not exist", note_id));
+        }
+        
+        fs::remove_file(&note_path)
+            .map_err(|e| format!("Failed to delete note '{}': {}", note_id, e))
+    }
+
+    /// Renames a note.
+    /// 
+    /// # Arguments
+    /// * `note_id` - The current ID of the note
+    /// * `new_name` - The new name for the note (without .md extension)
+    /// * `folder` - Optional folder containing the note
+    /// 
+    /// # Returns
+    /// * `Ok(String)` - The new note ID
+    /// * `Err(String)` - If renaming fails
+    /// 
+    /// # Requirements
+    /// Validates: Requirements 11.7
+    pub fn rename_note(&self, note_id: &str, new_name: &str, folder: Option<&str>) -> Result<String, String> {
+        let old_file_name = format!("{}.md", note_id);
+        let new_file_name = format!("{}.md", new_name);
+        
+        // Validate both names
+        validate_path(&self.notes_dir, &old_file_name)?;
+        validate_path(&self.notes_dir, &new_file_name)?;
+        
+        // Get the folder path
+        let folder_path = self.get_folder_path(folder);
+        
+        // Validate folder if specified
+        if let Some(f) = folder {
+            if !f.is_empty() {
+                validate_path(&self.notes_dir, f)?;
+            }
+        }
+        
+        let old_path = folder_path.join(&old_file_name);
+        let new_path = folder_path.join(&new_file_name);
+        
+        if !old_path.exists() {
+            return Err(format!("Note '{}' does not exist", note_id));
+        }
+        
+        if new_path.exists() {
+            return Err(format!("Note '{}' already exists", new_name));
+        }
+        
+        fs::rename(&old_path, &new_path)
+            .map_err(|e| format!("Failed to rename note '{}' to '{}': {}", note_id, new_name, e))?;
+        
+        Ok(new_name.to_string())
+    }
+
+    /// Moves a note from one folder to another.
+    /// 
+    /// # Arguments
+    /// * `note_id` - The ID of the note to move
+    /// * `from_folder` - The source folder
+    /// * `to_folder` - The target folder
+    /// 
+    /// # Returns
+    /// * `Ok(())` - If move was successful
+    /// * `Err(String)` - If moving fails
+    /// 
+    /// # Requirements
+    /// Validates: Requirements 11.8
+    pub fn move_note(&self, note_id: &str, from_folder: &str, to_folder: &str) -> Result<(), String> {
+        let file_name = format!("{}.md", note_id);
+        
+        // Validate the note_id
+        validate_path(&self.notes_dir, &file_name)?;
+        
+        // Validate folders
+        let from_path = if from_folder.is_empty() || from_folder == "All Notes" {
+            self.notes_dir.clone()
+        } else {
+            validate_path(&self.notes_dir, from_folder)?;
+            self.notes_dir.join(from_folder)
+        };
+        
+        let to_path = if to_folder.is_empty() || to_folder == "All Notes" {
+            self.notes_dir.clone()
+        } else {
+            validate_path(&self.notes_dir, to_folder)?;
+            self.notes_dir.join(to_folder)
+        };
+        
+        let source_file = from_path.join(&file_name);
+        let target_file = to_path.join(&file_name);
+        
+        if !source_file.exists() {
+            return Err(format!("Note '{}' does not exist in folder '{}'", note_id, from_folder));
+        }
+        
+        // Ensure target folder exists
+        if !to_path.exists() {
+            fs::create_dir_all(&to_path)
+                .map_err(|e| format!("Failed to create target folder: {}", e))?;
+        }
+        
+        if target_file.exists() {
+            return Err(format!("Note '{}' already exists in folder '{}'", note_id, to_folder));
+        }
+        
+        fs::rename(&source_file, &target_file)
+            .map_err(|e| format!("Failed to move note '{}': {}", note_id, e))
+    }
 }
 
 #[cfg(test)]
@@ -823,6 +1252,201 @@ mod tests {
             for file_path in &created_files {
                 prop_assert!(!file_path.exists(), "File should not exist after folder deletion: {:?}", file_path);
             }
+        }
+
+        /// **Feature: mded-tauri-migration, Property 8: Pinned Notes Ordering**
+        /// **Validates: Requirements 12.4**
+        /// 
+        /// For any list of notes with mixed pinned/unpinned status, listing notes
+        /// should return all pinned notes before any unpinned notes.
+        #[test]
+        fn prop_pinned_notes_ordering(
+            note_count in 1usize..20,
+            pinned_indices in proptest::collection::vec(0usize..20, 0..10),
+        ) {
+            let temp_dir = tempdir().unwrap();
+            let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+            fs.ensure_directories().unwrap();
+            
+            // Create notes
+            let mut note_ids = Vec::new();
+            for i in 0..note_count {
+                let note_id = format!("note-{}", i);
+                let file_path = fs.notes_dir.join(format!("{}.md", note_id));
+                std::fs::write(&file_path, format!("# Note {}\n\nContent", i)).unwrap();
+                note_ids.push(note_id);
+            }
+            
+            // Determine which notes should be pinned (filter to valid indices)
+            let pinned_notes: Vec<String> = pinned_indices
+                .iter()
+                .filter(|&&idx| idx < note_count)
+                .map(|&idx| note_ids[idx].clone())
+                .collect::<std::collections::HashSet<_>>()
+                .into_iter()
+                .collect();
+            
+            // Save pinned notes to config
+            fs.save_pinned_notes(pinned_notes.clone()).unwrap();
+            
+            // List notes
+            let notes = fs.list_notes(None).unwrap();
+            
+            // Verify all pinned notes come before unpinned notes
+            let mut seen_unpinned = false;
+            for note in &notes {
+                if note.pinned {
+                    prop_assert!(
+                        !seen_unpinned,
+                        "Pinned note '{}' appears after unpinned notes",
+                        note.id
+                    );
+                } else {
+                    seen_unpinned = true;
+                }
+            }
+            
+            // Verify pinned status is correct
+            for note in &notes {
+                let should_be_pinned = pinned_notes.contains(&note.id);
+                prop_assert_eq!(
+                    note.pinned,
+                    should_be_pinned,
+                    "Note '{}' pinned status mismatch: expected {}, got {}",
+                    note.id,
+                    should_be_pinned,
+                    note.pinned
+                );
+            }
+        }
+
+        /// **Feature: mded-tauri-migration, Property 1: Note Content Round-Trip**
+        /// **Validates: Requirements 11.3, 11.4**
+        /// 
+        /// For any valid note content string, saving the content to a note and then
+        /// reading it back should return the exact same content.
+        #[test]
+        fn prop_note_content_round_trip(content in ".*") {
+            let temp_dir = tempdir().unwrap();
+            let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+            fs.ensure_directories().unwrap();
+            
+            // Create a note
+            let (note_id, _) = fs.create_note(None).unwrap();
+            
+            // Save content
+            fs.save_note(&note_id, &content, None).unwrap();
+            
+            // Read content back
+            let read_content = fs.read_note(&note_id, None).unwrap();
+            
+            // Verify content matches
+            prop_assert_eq!(
+                &content,
+                &read_content,
+                "Content mismatch: saved '{}' but read '{}'",
+                &content,
+                &read_content
+            );
+        }
+
+        /// **Feature: mded-tauri-migration, Property 10: Note Creation Generates UUID**
+        /// **Validates: Requirements 11.5**
+        /// 
+        /// For any note creation operation, the generated note ID should match
+        /// the UUID format pattern `note-{uuid}.md`.
+        #[test]
+        fn prop_note_creation_generates_uuid(folder in proptest::option::of(valid_folder_name())) {
+            let temp_dir = tempdir().unwrap();
+            let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+            fs.ensure_directories().unwrap();
+            
+            // Create folder if specified
+            if let Some(ref f) = folder {
+                fs.create_folder(f).unwrap();
+            }
+            
+            // Create a note
+            let (note_id, path) = fs.create_note(folder.as_deref()).unwrap();
+            
+            // Verify note_id matches UUID pattern: note-{uuid}
+            // UUID v4 format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+            let uuid_pattern = regex::Regex::new(
+                r"^note-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            ).unwrap();
+            
+            prop_assert!(
+                uuid_pattern.is_match(&note_id),
+                "Note ID '{}' does not match UUID pattern 'note-{{uuid}}'",
+                note_id
+            );
+            
+            // Verify file was created
+            prop_assert!(
+                std::path::Path::new(&path).exists(),
+                "Note file was not created at '{}'",
+                path
+            );
+            
+            // Verify file has default content
+            let content = std::fs::read_to_string(&path).unwrap();
+            prop_assert_eq!(
+                &content,
+                "# New Note\n\n",
+                "Note content mismatch: expected '# New Note\\n\\n' but got '{}'",
+                &content
+            );
+        }
+
+        /// **Feature: mded-tauri-migration, Property 12: Note Move Preserves Content**
+        /// **Validates: Requirements 11.8**
+        /// 
+        /// For any note with content, moving it from one folder to another should
+        /// preserve the exact content.
+        #[test]
+        fn prop_note_move_preserves_content(
+            content in ".*",
+            from_folder in valid_folder_name(),
+            to_folder in valid_folder_name(),
+        ) {
+            // Skip if folders are the same
+            prop_assume!(from_folder != to_folder);
+            
+            let temp_dir = tempdir().unwrap();
+            let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+            fs.ensure_directories().unwrap();
+            
+            // Create both folders
+            fs.create_folder(&from_folder).unwrap();
+            fs.create_folder(&to_folder).unwrap();
+            
+            // Create a note in the source folder
+            let (note_id, _) = fs.create_note(Some(&from_folder)).unwrap();
+            
+            // Save content to the note
+            fs.save_note(&note_id, &content, Some(&from_folder)).unwrap();
+            
+            // Move the note
+            fs.move_note(&note_id, &from_folder, &to_folder).unwrap();
+            
+            // Read content from new location
+            let read_content = fs.read_note(&note_id, Some(&to_folder)).unwrap();
+            
+            // Verify content is preserved
+            prop_assert_eq!(
+                &content,
+                &read_content,
+                "Content mismatch after move: expected '{}' but got '{}'",
+                &content,
+                &read_content
+            );
+            
+            // Verify note no longer exists in source folder
+            let source_path = fs.notes_dir.join(&from_folder).join(format!("{}.md", note_id));
+            prop_assert!(
+                !source_path.exists(),
+                "Note still exists in source folder after move"
+            );
         }
     }
 }

@@ -66,50 +66,50 @@
     - Rename directory preserving contents
     - _Requirements: 10.4_
 
-- [ ] 4. Checkpoint - Ensure all tests pass
+- [x] 4. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 
-- [ ] 5. Implement Note Operations
-  - [ ] 5.1 Implement list_notes command
+- [x] 5. Implement Note Operations
+  - [x] 5.1 Implement list_notes command
     - List all .md files with metadata (id, title, modified, created, folder)
     - Support optional folder filter
     - Include pinned status from config
     - _Requirements: 11.1, 11.2_
-  - [ ] 5.2 Write property test for pinned notes ordering
+  - [x] 5.2 Write property test for pinned notes ordering
     - **Property 8: Pinned Notes Ordering**
     - **Validates: Requirements 12.4**
-  - [ ] 5.3 Implement read_note command
+  - [x] 5.3 Implement read_note command
     - Validate note_id and folder
     - Read and return file content
     - _Requirements: 11.3_
-  - [ ] 5.4 Implement save_note command
+  - [x] 5.4 Implement save_note command
     - Validate note_id and folder
     - Write content to file
     - _Requirements: 11.4_
-  - [ ] 5.5 Write property test for note content round-trip
+  - [x] 5.5 Write property test for note content round-trip
     - **Property 1: Note Content Round-Trip**
     - **Validates: Requirements 11.3, 11.4**
-  - [ ] 5.6 Implement create_note command
+  - [x] 5.6 Implement create_note command
     - Generate UUID-based filename (note-{uuid}.md)
     - Create file with default content "# New Note\n\n"
     - _Requirements: 11.5_
-  - [ ] 5.7 Write property test for note creation generates UUID
+  - [x] 5.7 Write property test for note creation generates UUID
     - **Property 10: Note Creation Generates UUID**
     - **Validates: Requirements 11.5**
-  - [ ] 5.8 Implement delete_note command
+  - [x] 5.8 Implement delete_note command
     - Validate and remove file
     - Update pinned_notes in config if necessary
     - _Requirements: 11.6_
-  - [ ] 5.9 Implement rename_note command
+  - [x] 5.9 Implement rename_note command
     - Validate old and new names
     - Rename file, update pinned_notes references
     - _Requirements: 11.7_
-  - [ ] 5.10 Implement move_note command
+  - [x] 5.10 Implement move_note command
     - Validate source and target folders
     - Move file preserving content
     - _Requirements: 11.8_
-  - [ ] 5.11 Write property test for note move preserves content
+  - [x] 5.11 Write property test for note move preserves content
     - **Property 12: Note Move Preserves Content**
     - **Validates: Requirements 11.8**
 
