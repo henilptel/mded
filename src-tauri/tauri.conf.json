@@ -35,18 +35,21 @@
     ],
     "windows": {
       "nsis": {
-        "oneClick": false,
-        "allowToChangeInstallationDirectory": true
+        "installMode": "perMachine"
       }
     },
     "macOS": {
       "minimumSystemVersion": "10.13"
     },
     "linux": {
-      "desktop": {
-        "categories": ["Utility", "TextEditor"]
+      "deb": {
+        "desktopTemplate": null
+      },
+      "appimage": {
+        "bundleMediaFramework": false
       }
-    }
+    },
+    "category": "Utility"
   },
   "plugins": {
     "autostart": {
