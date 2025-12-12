@@ -85,6 +85,7 @@ pub fn run() {
             commands::toggle_pin_note,
             commands::get_note_order,
             commands::save_note_order,
+            commands::save_quick_note,
             commands::get_last_note,
             commands::save_last_note,
             commands::get_global_shortcut,

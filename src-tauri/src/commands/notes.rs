@@ -200,3 +200,60 @@ pub async fn save_note_order(
         Err(e) => Ok(ApiResult::error(e)),
     }
 }
+
+/// Saves content from the quick note popup as a new note.
+/// 
+/// Creates a note with filename quick-{timestamp}.md, shows a notification,
+/// emits refresh-notes event, and hides the quick note window.
+/// 
+/// # Arguments
+/// * `content` - The content to save
+/// 
+/// # Requirements
+/// Validates: Requirements 8.2
+#[tauri::command]
+pub async fn save_quick_note(
+    content: String,
+    filesystem: State<'_, FileSystem>,
+    app: tauri::AppHandle,
+) -> Result<ApiResult, String> {
+    use chrono::Utc;
+    use tauri::Emitter;
+    use tauri::Manager;
+    use tauri_plugin_notification::NotificationExt;
+    
+    // Validate content is not empty
+    if content.trim().is_empty() {
+        return Ok(ApiResult::error("Content cannot be empty"));
+    }
+    
+    // Generate timestamp-based filename: quick-{timestamp}
+    let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
+    let note_id = format!("quick-{}", timestamp);
+    
+    // Format the content with a title
+    let formatted_content = format!("# Quick Note\n\n{}", content);
+    
+    // Save the note to the root notes directory (no folder)
+    match filesystem.save_note(&note_id, &formatted_content, None) {
+        Ok(()) => {
+            // Show notification
+            let _ = app.notification()
+                .builder()
+                .title("Quick Note Saved")
+                .body("Your quick note has been saved")
+                .show();
+            
+            // Emit refresh-notes event to update the UI
+            let _ = app.emit("refresh-notes", note_id.clone());
+            
+            // Hide the quick note window
+            if let Some(window) = app.get_webview_window("quick-note") {
+                let _ = window.hide();
+            }
+            
+            Ok(ApiResult::with_note_id(note_id))
+        }
+        Err(e) => Ok(ApiResult::error(e)),
+    }
+}

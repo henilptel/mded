@@ -371,9 +371,10 @@ fn capture_clipboard_to_note<R: Runtime>(app: &AppHandle<R>) {
 /// Opens the quick note popup window.
 /// 
 /// Creates or shows the quick note window, positioning it in the top-right corner.
+/// The window is frameless, transparent, always-on-top, and skips the taskbar.
 /// 
 /// # Requirements
-/// Validates: Requirements 7.3
+/// Validates: Requirements 7.3, 8.1
 fn open_quick_note_window<R: Runtime>(app: &AppHandle<R>) {
     // Check if quick note window already exists
     if let Some(window) = app.get_webview_window("quick-note") {
@@ -382,10 +383,69 @@ fn open_quick_note_window<R: Runtime>(app: &AppHandle<R>) {
         return;
     }
 
+    // Create the quick note window with proper configuration
+    // Frameless, transparent, always-on-top, skip taskbar
+    // Position in top-right corner of screen
+    let app_handle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        if let Err(e) = create_quick_note_window(&app_handle).await {
+            log::error!("Failed to create quick note window: {}", e);
+        }
+    });
+}
+
+/// Creates the quick note window with proper configuration.
+/// 
+/// # Requirements
+/// Validates: Requirements 8.1
+async fn create_quick_note_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
+    use tauri::WebviewWindowBuilder;
+    use tauri::WebviewUrl;
+    
+    // Get display info to position in top-right corner
+    let (screen_width, _screen_height) = if let Some(window) = app.get_webview_window("main") {
+        if let Ok(Some(monitor)) = window.primary_monitor() {
+            let size = monitor.size();
+            (size.width as i32, size.height as i32)
+        } else {
+            (1920, 1080) // Default fallback
+        }
+    } else {
+        (1920, 1080) // Default fallback
+    };
+    
+    // Quick note window dimensions
+    let window_width = 400;
+    let window_height = 200;
+    let margin = 20;
+    
+    // Position in top-right corner
+    let x = screen_width - window_width - margin;
+    let y = margin;
+    
     // Create the quick note window
-    // Note: The actual window creation will be handled by the frontend
-    // or through Tauri's window configuration. For now, we emit an event.
-    let _ = app.emit("open-quick-note", ());
+    let window = WebviewWindowBuilder::new(
+        app,
+        "quick-note",
+        WebviewUrl::App("quick-note.html".into()),
+    )
+    .title("Quick Note")
+    .inner_size(window_width as f64, window_height as f64)
+    .position(x as f64, y as f64)
+    .decorations(false)
+    .transparent(true)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .resizable(false)
+    .focused(true)
+    .visible(true)
+    .build()
+    .map_err(|e| format!("Failed to create quick note window: {}", e))?;
+    
+    // Set focus to the window
+    let _ = window.set_focus();
+    
+    Ok(())
 }
 
 /// Shows a system notification.

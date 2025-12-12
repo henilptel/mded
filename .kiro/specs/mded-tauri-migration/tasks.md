@@ -242,22 +242,22 @@
     - **Property: Invalid shortcut registration returns error**
     - **Validates: Requirements 7.5**
 
-- [-] 13. Implement Quick Note Window
-  - [ ] 13.1 Create quick note window configuration
+- [ ] 13. Implement Quick Note Window
+  - [x] 13.1 Create quick note window configuration
     - Frameless, transparent, always-on-top, skip taskbar
     - Position in top-right corner of screen
     - _Requirements: 8.1_
-  - [ ] 13.2 Implement save_quick_note command
+  - [x] 13.2 Implement save_quick_note command
     - Save content as quick-{timestamp}.md
     - Show notification, emit refresh-notes event
     - _Requirements: 8.2_
-  - [ ] 13.3 Handle quick note window blur event
+  - [x] 13.3 Handle quick note window blur event
     - Hide window on focus loss
     - _Requirements: 8.3_
 
 
-- [ ] 14. Implement System Integration
-  - [ ] 14.1 Implement save_screenshot command
+- [-] 14. Implement System Integration
+  - [-] 14.1 Implement save_screenshot command
     - Decode base64 PNG data
     - Save to assets directory with unique filename
     - Return file path for markdown reference

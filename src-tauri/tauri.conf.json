@@ -13,6 +13,7 @@
     "windows": [
       {
         "title": "MDed",
+        "label": "main",
         "width": 1200,
         "height": 800,
         "minWidth": 300,
