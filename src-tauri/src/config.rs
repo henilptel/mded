@@ -716,5 +716,47 @@ mod tests {
                 &loaded
             );
         }
+
+        /// **Feature: mded-tauri-migration, Property 4: Opacity Persistence Round-Trip**
+        /// **Validates: Requirements 6.2, 6.3**
+        /// 
+        /// For any opacity value between 0.3 and 1.0, setting the opacity and then
+        /// retrieving it should return the same value. Additionally, saving and
+        /// reloading the config should preserve the opacity.
+        #[test]
+        fn prop_opacity_persistence_round_trip(
+            opacity in 0.3f64..=1.0f64
+        ) {
+            let temp_dir = tempdir().unwrap();
+            let config_path = temp_dir.path().join("config.json");
+            
+            // Create a config manager and set the opacity
+            let manager = ConfigManager::new(config_path.clone()).unwrap();
+            manager.set_window_opacity(opacity);
+            
+            // Verify the opacity is set correctly in memory
+            let retrieved = manager.get_window_opacity();
+            prop_assert!(
+                (retrieved - opacity).abs() < f64::EPSILON,
+                "Opacity mismatch in memory: set {} but got {}",
+                opacity,
+                retrieved
+            );
+            
+            // Save to disk
+            manager.save_sync().unwrap();
+            
+            // Create a new manager and load from disk
+            let manager2 = ConfigManager::new(config_path).unwrap();
+            let loaded = manager2.get_window_opacity();
+            
+            // Verify the opacity persisted correctly
+            prop_assert!(
+                (loaded - opacity).abs() < 0.0001, // Allow small floating point tolerance
+                "Opacity mismatch after reload: saved {} but loaded {}",
+                opacity,
+                loaded
+            );
+        }
     }
 }

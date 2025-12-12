@@ -4,9 +4,11 @@ pub mod commands;
 pub mod config;
 pub mod filesystem;
 pub mod models;
+pub mod window;
 
 use config::ConfigManager;
 use filesystem::FileSystem;
+use window::WindowManager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -37,8 +39,12 @@ pub fn run() {
             let config_manager = ConfigManager::new(filesystem.config_file.clone())
                 .expect("Failed to initialize config manager");
             
+            // Initialize window manager
+            let window_manager = WindowManager::new();
+            
             app.manage(filesystem);
             app.manage(config_manager);
+            app.manage(window_manager);
             
             #[cfg(debug_assertions)]
             {
@@ -66,6 +72,18 @@ pub fn run() {
             commands::save_last_note,
             commands::get_global_shortcut,
             commands::set_global_shortcut,
+            // Window commands
+            commands::minimize_window,
+            commands::maximize_window,
+            commands::close_window,
+            commands::set_always_on_top,
+            commands::enter_minimal_mode,
+            commands::exit_minimal_mode,
+            commands::save_minimal_bounds,
+            commands::get_window_opacity,
+            commands::set_window_opacity,
+            commands::get_display_info,
+            commands::save_window_bounds,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

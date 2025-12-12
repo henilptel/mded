@@ -159,57 +159,57 @@
     - **Validates: Requirements 7.4**
 
 
-- [-] 9. Implement Window Management
-  - [-] 9.1 Create WindowManager struct
+- [ ] 9. Implement Window Management
+  - [x] 9.1 Create WindowManager struct
     - Track normal_bounds and is_minimal_mode state
     - _Requirements: 5.1, 5.2_
-  - [ ] 9.2 Implement window control commands (minimize, maximize, close)
+  - [x] 9.2 Implement window control commands (minimize, maximize, close)
     - minimize_window: minimize the window
     - maximize_window: toggle maximize state
     - close_window: hide window instead of closing
     - _Requirements: 2.5_
-  - [ ] 9.3 Implement enter_minimal_mode command
+  - [x] 9.3 Implement enter_minimal_mode command
     - Save current bounds
     - Set always-on-top, resize to minimal bounds
     - _Requirements: 5.1_
-  - [ ] 9.4 Implement exit_minimal_mode command
+  - [x] 9.4 Implement exit_minimal_mode command
     - Save minimal bounds
     - Restore normal bounds, disable always-on-top
     - _Requirements: 5.2_
-  - [ ] 9.5 Write property test for minimal mode bounds isolation
+  - [x] 9.5 Write property test for minimal mode bounds isolation
     - **Property 17: Minimal Mode Bounds Isolation**
     - **Validates: Requirements 5.3**
-  - [ ] 9.6 Implement save_minimal_bounds command
+  - [x] 9.6 Implement save_minimal_bounds command
     - Persist current bounds as minimal mode bounds
     - _Requirements: 5.3_
-  - [ ] 9.7 Implement set_always_on_top command
+  - [x] 9.7 Implement set_always_on_top command
     - Set window always-on-top flag
     - _Requirements: 5.1_
-  - [ ] 9.8 Implement window bounds persistence on move/resize
+  - [x] 9.8 Implement window bounds persistence on move/resize
     - Listen to window events
     - Debounce and save bounds to config
     - _Requirements: 2.3, 2.4_
-  - [ ] 9.9 Write property test for window bounds persistence round-trip
+  - [x] 9.9 Write property test for window bounds persistence round-trip
     - **Property 3: Window Bounds Persistence Round-Trip**
     - **Validates: Requirements 2.3, 2.4**
-  - [ ] 9.10 Implement get_window_opacity and set_window_opacity commands
+  - [x] 9.10 Implement get_window_opacity and set_window_opacity commands
     - Clamp opacity between 0.3 and 1.0
     - Apply via CSS variable for Linux compatibility
     - _Requirements: 6.1, 6.2, 6.3_
-  - [ ] 9.11 Write property test for opacity clamping
+  - [x] 9.11 Write property test for opacity clamping
     - **Property 7: Opacity Clamping**
     - **Validates: Requirements 6.1**
-  - [ ] 9.12 Write property test for opacity persistence round-trip
+  - [x] 9.12 Write property test for opacity persistence round-trip
     - **Property 4: Opacity Persistence Round-Trip**
     - **Validates: Requirements 6.2, 6.3**
-  - [ ] 9.13 Implement get_display_info command
+  - [x] 9.13 Implement get_display_info command
     - Return primary monitor work area dimensions
     - _Requirements: 18.1_
 
-- [ ] 10. Checkpoint - Ensure all tests pass
+- [x] 10. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 11. Implement System Tray
+- [-] 11. Implement System Tray
   - [ ] 11.1 Set up system tray with icon
     - Create tray icon from build/icon.png
     - Set tooltip "MDed - Markdown Editor"
