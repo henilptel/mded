@@ -21,6 +21,7 @@ pub struct NoteInfo {
 
 /// Generic API result for IPC commands
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct ApiResult {
     pub success: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -81,6 +82,16 @@ impl ApiResult {
             ..Default::default()
         }
     }
+
+    /// Create a success result with note_id and folder
+    pub fn with_note_id_and_folder(note_id: impl Into<String>, folder: Option<String>) -> Self {
+        Self {
+            success: true,
+            note_id: Some(note_id.into()),
+            folder,
+            ..Default::default()
+        }
+    }
 }
 
 /// Window bounds for position and size persistence
@@ -114,6 +125,7 @@ pub struct DisplayInfo {
 
 /// Last opened note information
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct LastNote {
     pub note_id: Option<String>,
     pub folder: Option<String>,

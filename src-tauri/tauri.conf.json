@@ -52,13 +52,5 @@
     },
     "category": "Utility"
   },
-  "plugins": {
-    "autostart": {
-      "macOSLaunchAgent": true
-    },
-    "global-shortcut": {},
-    "notification": {},
-    "clipboard-manager": {},
-    "single-instance": {}
-  }
+  "plugins": {}
 }

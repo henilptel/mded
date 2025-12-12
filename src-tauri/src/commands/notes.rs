@@ -75,7 +75,7 @@ pub async fn create_note(
     filesystem: State<'_, FileSystem>,
 ) -> Result<ApiResult, String> {
     match filesystem.create_note(folder.as_deref()) {
-        Ok((note_id, _path)) => Ok(ApiResult::with_note_id(note_id)),
+        Ok((note_id, _path)) => Ok(ApiResult::with_note_id_and_folder(note_id, folder)),
         Err(e) => Ok(ApiResult::error(e)),
     }
 }

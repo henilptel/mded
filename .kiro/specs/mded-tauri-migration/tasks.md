@@ -291,20 +291,20 @@
 - [x] 16. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [-] 17. Adapt Frontend for Tauri
-  - [ ] 17.1 Create Tauri API bridge (src/renderer/api.ts)
+- [x] 17. Adapt Frontend for Tauri
+  - [x] 17.1 Create Tauri API bridge (src/renderer/api.ts)
     - Wrap @tauri-apps/api/core invoke calls
     - Match existing window.electron interface
     - Expose as window.electron for compatibility
     - _Requirements: 20.1_
-  - [ ] 17.2 Update global.d.ts for Tauri types
+  - [x] 17.2 Update global.d.ts for Tauri types
     - Declare window.electron interface
     - _Requirements: 20.1_
-  - [ ] 17.3 Set up event listeners for backend events
+  - [x] 17.3 Set up event listeners for backend events
     - Listen for refresh-notes event
     - Listen for open-file event
     - _Requirements: 22.1, 22.2_
-  - [ ] 17.4 Update build configuration
+  - [x] 17.4 Update build configuration
     - Configure Vite for Tauri
     - Update tsconfig.json paths
     - _Requirements: 1.4_

@@ -216,10 +216,11 @@ impl FileSystem {
     pub fn list_folders(&self) -> Result<Vec<crate::models::FolderInfo>, String> {
         use crate::models::FolderInfo;
         
+        // "All Notes" virtual folder uses empty string as path identifier
         let mut folders = vec![
             FolderInfo {
                 name: "All Notes".to_string(),
-                path: self.notes_dir.to_string_lossy().to_string(),
+                path: String::new(),
             }
         ];
 
@@ -233,9 +234,10 @@ impl FileSystem {
             
             if path.is_dir() {
                 if let Some(name) = path.file_name() {
+                    let folder_name = name.to_string_lossy().to_string();
                     folders.push(FolderInfo {
-                        name: name.to_string_lossy().to_string(),
-                        path: path.to_string_lossy().to_string(),
+                        name: folder_name.clone(),
+                        path: folder_name, // Use folder name as path identifier
                     });
                 }
             }

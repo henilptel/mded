@@ -1,3 +1,6 @@
+// Initialize Tauri API bridge - must be first import to set up window.electron
+import './api';
+
 import { NoteManager } from './managers/note-manager';
 import { UIManager } from './managers/ui-manager';
 import { ShortcutManager } from './managers/shortcut-manager';

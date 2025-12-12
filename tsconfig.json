@@ -13,6 +13,6 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src-tauri"]
+  "include": ["src/renderer/**/*"],
+  "exclude": ["node_modules", "dist", "src-tauri", "src/main.ts", "src/preload.ts"]
 }
