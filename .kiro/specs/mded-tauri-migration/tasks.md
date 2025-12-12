@@ -135,7 +135,7 @@
 - [x] 7. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 8. Implement Config Module
+- [x] 8. Implement Config Module
   - [x] 8.1 Create ConfigManager with load/save functionality
     - Implement Default trait for Config
     - Load config merging with defaults
@@ -159,7 +159,7 @@
     - **Validates: Requirements 7.4**
 
 
-- [ ] 9. Implement Window Management
+- [x] 9. Implement Window Management
   - [x] 9.1 Create WindowManager struct
     - Track normal_bounds and is_minimal_mode state
     - _Requirements: 5.1, 5.2_
@@ -209,7 +209,7 @@
 - [x] 10. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 11. Implement System Tray
+- [x] 11. Implement System Tray
   - [x] 11.1 Set up system tray with icon
     - Create tray icon from build/icon.png
     - Set tooltip "MDed - Markdown Editor"
@@ -222,7 +222,7 @@
     - Handle menu item clicks
     - _Requirements: 4.3, 4.4_
 
-- [ ] 12. Implement Global Shortcuts
+- [x] 12. Implement Global Shortcuts
   - [x] 12.1 Create ShortcutManager struct
     - Track registered shortcuts
     - _Requirements: 7.1_
@@ -242,7 +242,7 @@
     - **Property: Invalid shortcut registration returns error**
     - **Validates: Requirements 7.5**
 
-- [ ] 13. Implement Quick Note Window
+- [x] 13. Implement Quick Note Window
   - [x] 13.1 Create quick note window configuration
     - Frameless, transparent, always-on-top, skip taskbar
     - Position in top-right corner of screen

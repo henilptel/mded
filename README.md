@@ -24,7 +24,7 @@ A modern, fast, and minimalistic Markdown editor for **Windows, macOS, and Linux
 
 ## Tech Stack
 
-- **Electron**: For cross-platform desktop integration.
+- **Tauri 2.x**: Rust-based framework for lightweight, secure desktop apps.
 - **TypeScript**: Strictly typed codebase for reliability.
 - **Vanilla DOM**: Lightweight performance without heavy framework overhead.
 - **Marked.js**: Fast markdown parsing.
@@ -33,6 +33,7 @@ A modern, fast, and minimalistic Markdown editor for **Windows, macOS, and Linux
 ## Requirements
 
 - Node.js 18+ recommended
+- Rust toolchain (for building)
 
 ## Supported Platforms
 
@@ -47,7 +48,7 @@ A modern, fast, and minimalistic Markdown editor for **Windows, macOS, and Linux
 ### Install Dependencies
 
 ```bash
-npm install
+pnpm install
 ```
 
 ### Development Mode
@@ -55,13 +56,7 @@ npm install
 Run the app in development mode:
 
 ```bash
-npm run dev
-```
-
-Or watch for changes:
-
-```bash
-npm run watch
+pnpm tauri:dev
 ```
 
 ### Build for Production
@@ -69,37 +64,14 @@ npm run watch
 Build for your current platform:
 
 ```bash
-npm run package
+pnpm tauri:build
 ```
 
-Build for specific platforms:
-
-```bash
-# Windows
-npm run package:win
-
-# macOS
-npm run package:mac
-
-# Linux
-npm run package:linux
-
-# All platforms
-npm run package:all
-```
-
-The output will be in the `dist/` directory.
+The output will be in `src-tauri/target/release/bundle/`.
 
 ### Register as Default .md Handler (Linux)
 
-Copy the desktop entry to your applications directory:
-
-```bash
-cp MDed.desktop ~/.local/share/applications/
-update-desktop-database ~/.local/share/applications/
-```
-
-Then set MDed as the default handler for markdown files.
+After installing the .deb package, MDed is automatically registered as a handler for .md files.
 
 ## Data Storage
 
@@ -107,9 +79,9 @@ Notes and configuration are stored in platform-specific locations:
 
 | Platform | Location |
 |----------|----------|
-| Windows | `%USERPROFILE%\.mded\` |
-| macOS | `~/.mded/` |
-| Linux | `~/.mded/` |
+| Windows | `%APPDATA%\com.mded.app\` |
+| macOS | `~/Library/Application Support/com.mded.app/` |
+| Linux | `~/.local/share/com.mded.app/` |
 
 - **Notes**: `{data_dir}/notes/`
 - **Assets**: `{data_dir}/assets/`
