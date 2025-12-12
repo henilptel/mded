@@ -201,6 +201,146 @@ impl FileSystem {
             _ => self.notes_dir.clone(),
         }
     }
+
+    /// Lists all folders in the notes directory.
+    /// 
+    /// Returns all directories in the notes directory, with "All Notes" virtual folder
+    /// as the first entry.
+    /// 
+    /// # Returns
+    /// * `Ok(Vec<FolderInfo>)` - List of folders with "All Notes" first
+    /// * `Err(String)` - If reading the directory fails
+    /// 
+    /// # Requirements
+    /// Validates: Requirements 10.1
+    pub fn list_folders(&self) -> Result<Vec<crate::models::FolderInfo>, String> {
+        use crate::models::FolderInfo;
+        
+        let mut folders = vec![
+            FolderInfo {
+                name: "All Notes".to_string(),
+                path: self.notes_dir.to_string_lossy().to_string(),
+            }
+        ];
+
+        // Read directories from notes_dir
+        let entries = fs::read_dir(&self.notes_dir)
+            .map_err(|e| format!("Failed to read notes directory: {}", e))?;
+
+        for entry in entries {
+            let entry = entry.map_err(|e| format!("Failed to read directory entry: {}", e))?;
+            let path = entry.path();
+            
+            if path.is_dir() {
+                if let Some(name) = path.file_name() {
+                    folders.push(FolderInfo {
+                        name: name.to_string_lossy().to_string(),
+                        path: path.to_string_lossy().to_string(),
+                    });
+                }
+            }
+        }
+
+        Ok(folders)
+    }
+
+    /// Creates a new folder in the notes directory.
+    /// 
+    /// # Arguments
+    /// * `name` - The name of the folder to create
+    /// 
+    /// # Returns
+    /// * `Ok(())` - If the folder was created successfully
+    /// * `Err(String)` - If validation fails or creation fails
+    /// 
+    /// # Requirements
+    /// Validates: Requirements 10.2
+    pub fn create_folder(&self, name: &str) -> Result<(), String> {
+        // Validate the folder name
+        let folder_path = self.validate_notes_path(name)?;
+        
+        // Check if folder already exists
+        if folder_path.exists() {
+            return Err(format!("Folder '{}' already exists", name));
+        }
+        
+        // Create the folder
+        fs::create_dir(&folder_path)
+            .map_err(|e| format!("Failed to create folder '{}': {}", name, e))?;
+        
+        Ok(())
+    }
+
+    /// Deletes a folder and all its contents from the notes directory.
+    /// 
+    /// # Arguments
+    /// * `name` - The name of the folder to delete
+    /// 
+    /// # Returns
+    /// * `Ok(())` - If the folder was deleted successfully
+    /// * `Err(String)` - If validation fails or deletion fails
+    /// 
+    /// # Requirements
+    /// Validates: Requirements 10.3
+    pub fn delete_folder(&self, name: &str) -> Result<(), String> {
+        // Validate the folder name
+        let folder_path = self.validate_notes_path(name)?;
+        
+        // Check if folder exists
+        if !folder_path.exists() {
+            return Err(format!("Folder '{}' does not exist", name));
+        }
+        
+        // Check if it's actually a directory
+        if !folder_path.is_dir() {
+            return Err(format!("'{}' is not a folder", name));
+        }
+        
+        // Recursively remove the folder and all contents
+        fs::remove_dir_all(&folder_path)
+            .map_err(|e| format!("Failed to delete folder '{}': {}", name, e))?;
+        
+        Ok(())
+    }
+
+    /// Renames a folder in the notes directory.
+    /// 
+    /// # Arguments
+    /// * `old_name` - The current name of the folder
+    /// * `new_name` - The new name for the folder
+    /// 
+    /// # Returns
+    /// * `Ok(())` - If the folder was renamed successfully
+    /// * `Err(String)` - If validation fails or renaming fails
+    /// 
+    /// # Requirements
+    /// Validates: Requirements 10.4
+    pub fn rename_folder(&self, old_name: &str, new_name: &str) -> Result<(), String> {
+        // Validate both folder names
+        let old_path = self.validate_notes_path(old_name)?;
+        let new_path = self.validate_notes_path(new_name)?;
+        
+        // Check if old folder exists
+        if !old_path.exists() {
+            return Err(format!("Folder '{}' does not exist", old_name));
+        }
+        
+        // Check if it's actually a directory
+        if !old_path.is_dir() {
+            return Err(format!("'{}' is not a folder", old_name));
+        }
+        
+        // Check if new folder already exists
+        if new_path.exists() {
+            return Err(format!("Folder '{}' already exists", new_name));
+        }
+        
+        // Rename the folder
+        fs::rename(&old_path, &new_path)
+            .map_err(|e| format!("Failed to rename folder '{}' to '{}': {}", old_name, new_name, e))?;
+        
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -448,5 +588,241 @@ mod tests {
         
         // Folder name should return subfolder
         assert_eq!(fs.get_folder_path(Some("work")), fs.notes_dir.join("work"));
+    }
+
+    // Folder operations tests
+    #[test]
+    fn test_list_folders_empty() {
+        let temp_dir = tempdir().unwrap();
+        let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+        fs.ensure_directories().unwrap();
+        
+        let folders = fs.list_folders().unwrap();
+        
+        // Should have exactly one folder: "All Notes"
+        assert_eq!(folders.len(), 1);
+        assert_eq!(folders[0].name, "All Notes");
+    }
+
+    #[test]
+    fn test_list_folders_with_subfolders() {
+        let temp_dir = tempdir().unwrap();
+        let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+        fs.ensure_directories().unwrap();
+        
+        // Create some folders
+        std::fs::create_dir(fs.notes_dir.join("work")).unwrap();
+        std::fs::create_dir(fs.notes_dir.join("personal")).unwrap();
+        
+        let folders = fs.list_folders().unwrap();
+        
+        // Should have 3 folders: "All Notes" + 2 created
+        assert_eq!(folders.len(), 3);
+        assert_eq!(folders[0].name, "All Notes");
+        
+        // Other folders should be present (order may vary)
+        let folder_names: Vec<&str> = folders.iter().map(|f| f.name.as_str()).collect();
+        assert!(folder_names.contains(&"work"));
+        assert!(folder_names.contains(&"personal"));
+    }
+
+    #[test]
+    fn test_create_folder() {
+        let temp_dir = tempdir().unwrap();
+        let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+        fs.ensure_directories().unwrap();
+        
+        fs.create_folder("test-folder").unwrap();
+        
+        assert!(fs.notes_dir.join("test-folder").exists());
+        assert!(fs.notes_dir.join("test-folder").is_dir());
+    }
+
+    #[test]
+    fn test_create_folder_already_exists() {
+        let temp_dir = tempdir().unwrap();
+        let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+        fs.ensure_directories().unwrap();
+        
+        fs.create_folder("test-folder").unwrap();
+        let result = fs.create_folder("test-folder");
+        
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("already exists"));
+    }
+
+    #[test]
+    fn test_delete_folder() {
+        let temp_dir = tempdir().unwrap();
+        let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+        fs.ensure_directories().unwrap();
+        
+        fs.create_folder("to-delete").unwrap();
+        assert!(fs.notes_dir.join("to-delete").exists());
+        
+        fs.delete_folder("to-delete").unwrap();
+        assert!(!fs.notes_dir.join("to-delete").exists());
+    }
+
+    #[test]
+    fn test_delete_folder_not_exists() {
+        let temp_dir = tempdir().unwrap();
+        let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+        fs.ensure_directories().unwrap();
+        
+        let result = fs.delete_folder("nonexistent");
+        
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("does not exist"));
+    }
+
+    #[test]
+    fn test_rename_folder() {
+        let temp_dir = tempdir().unwrap();
+        let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+        fs.ensure_directories().unwrap();
+        
+        fs.create_folder("old-name").unwrap();
+        fs.rename_folder("old-name", "new-name").unwrap();
+        
+        assert!(!fs.notes_dir.join("old-name").exists());
+        assert!(fs.notes_dir.join("new-name").exists());
+    }
+
+    #[test]
+    fn test_rename_folder_preserves_contents() {
+        let temp_dir = tempdir().unwrap();
+        let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+        fs.ensure_directories().unwrap();
+        
+        fs.create_folder("old-name").unwrap();
+        
+        // Create a file inside the folder
+        let file_path = fs.notes_dir.join("old-name").join("test.md");
+        std::fs::write(&file_path, "test content").unwrap();
+        
+        fs.rename_folder("old-name", "new-name").unwrap();
+        
+        // File should exist in new location
+        let new_file_path = fs.notes_dir.join("new-name").join("test.md");
+        assert!(new_file_path.exists());
+        assert_eq!(std::fs::read_to_string(new_file_path).unwrap(), "test content");
+    }
+
+    // Strategy for generating valid folder names (no path separators or traversal)
+    fn valid_folder_name() -> impl Strategy<Value = String> {
+        "[a-zA-Z][a-zA-Z0-9_-]{0,20}".prop_filter("Must not be empty", |s| !s.is_empty())
+    }
+
+    // Strategy for generating a list of unique valid folder names
+    fn unique_folder_names(max_count: usize) -> impl Strategy<Value = Vec<String>> {
+        proptest::collection::vec(valid_folder_name(), 0..=max_count)
+            .prop_map(|names| {
+                // Deduplicate names
+                let mut unique: Vec<String> = Vec::new();
+                for name in names {
+                    if !unique.contains(&name) {
+                        unique.push(name);
+                    }
+                }
+                unique
+            })
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(100))]
+
+        /// **Feature: mded-tauri-migration, Property 9: Folder Listing Includes Virtual Folder**
+        /// **Validates: Requirements 10.1**
+        /// 
+        /// For any state of the notes directory, listing folders should always
+        /// include "All Notes" as the first entry.
+        #[test]
+        fn prop_folder_listing_includes_virtual_folder(folder_names in unique_folder_names(10)) {
+            let temp_dir = tempdir().unwrap();
+            let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+            fs.ensure_directories().unwrap();
+            
+            // Create the folders
+            for name in &folder_names {
+                fs.create_folder(name).unwrap();
+            }
+            
+            // List folders
+            let folders = fs.list_folders().unwrap();
+            
+            // First folder should always be "All Notes"
+            prop_assert!(!folders.is_empty(), "Folder list should never be empty");
+            prop_assert_eq!(
+                &folders[0].name, 
+                "All Notes", 
+                "First folder should be 'All Notes', got '{}'", 
+                &folders[0].name
+            );
+            
+            // Total count should be 1 (All Notes) + number of created folders
+            prop_assert_eq!(
+                folders.len(), 
+                1 + folder_names.len(),
+                "Expected {} folders, got {}", 
+                1 + folder_names.len(), 
+                folders.len()
+            );
+            
+            // All created folders should be present
+            let folder_name_set: std::collections::HashSet<&str> = 
+                folders.iter().map(|f| f.name.as_str()).collect();
+            for name in &folder_names {
+                prop_assert!(
+                    folder_name_set.contains(name.as_str()),
+                    "Folder '{}' should be in the list",
+                    name
+                );
+            }
+        }
+
+        /// **Feature: mded-tauri-migration, Property 11: Folder Deletion Removes All Contents**
+        /// **Validates: Requirements 10.3**
+        /// 
+        /// For any folder containing notes, deleting the folder should result in
+        /// all contained notes being removed.
+        #[test]
+        fn prop_folder_deletion_removes_all_contents(
+            folder_name in valid_folder_name(),
+            file_count in 0usize..10,
+        ) {
+            let temp_dir = tempdir().unwrap();
+            let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+            fs.ensure_directories().unwrap();
+            
+            // Create the folder
+            fs.create_folder(&folder_name).unwrap();
+            let folder_path = fs.notes_dir.join(&folder_name);
+            
+            // Create some files inside the folder
+            let mut created_files = Vec::new();
+            for i in 0..file_count {
+                let file_name = format!("note-{}.md", i);
+                let file_path = folder_path.join(&file_name);
+                std::fs::write(&file_path, format!("Content of note {}", i)).unwrap();
+                created_files.push(file_path);
+            }
+            
+            // Verify files were created
+            for file_path in &created_files {
+                prop_assert!(file_path.exists(), "File should exist before deletion: {:?}", file_path);
+            }
+            
+            // Delete the folder
+            fs.delete_folder(&folder_name).unwrap();
+            
+            // Verify folder no longer exists
+            prop_assert!(!folder_path.exists(), "Folder should not exist after deletion");
+            
+            // Verify all files are gone
+            for file_path in &created_files {
+                prop_assert!(!file_path.exists(), "File should not exist after folder deletion: {:?}", file_path);
+            }
+        }
     }
 }

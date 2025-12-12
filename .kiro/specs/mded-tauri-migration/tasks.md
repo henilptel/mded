@@ -42,26 +42,26 @@
     - Implement ensure_directories to create folder structure
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
 
-- [ ] 3. Implement Folder Operations
-  - [ ] 3.1 Implement list_folders command
+- [x] 3. Implement Folder Operations
+  - [x] 3.1 Implement list_folders command
     - Return all directories in notes_dir
     - Include "All Notes" virtual folder as first entry
     - _Requirements: 10.1_
-  - [ ] 3.2 Write property test for folder listing includes virtual folder
+  - [x] 3.2 Write property test for folder listing includes virtual folder
     - **Property 9: Folder Listing Includes Virtual Folder**
     - **Validates: Requirements 10.1**
-  - [ ] 3.3 Implement create_folder command
+  - [x] 3.3 Implement create_folder command
     - Validate folder name with path validator
     - Create directory in notes_dir
     - _Requirements: 10.2_
-  - [ ] 3.4 Implement delete_folder command
+  - [x] 3.4 Implement delete_folder command
     - Validate folder name
     - Recursively remove folder and contents
     - _Requirements: 10.3_
-  - [ ] 3.5 Write property test for folder deletion removes all contents
+  - [x] 3.5 Write property test for folder deletion removes all contents
     - **Property 11: Folder Deletion Removes All Contents**
     - **Validates: Requirements 10.3**
-  - [ ] 3.6 Implement rename_folder command
+  - [x] 3.6 Implement rename_folder command
     - Validate both old and new names
     - Rename directory preserving contents
     - _Requirements: 10.4_

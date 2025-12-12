@@ -1,7 +1,10 @@
 use tauri::Manager;
 
+pub mod commands;
 pub mod filesystem;
 pub mod models;
+
+use filesystem::FileSystem;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -22,6 +25,14 @@ pub fn run() {
             }
         }))
         .setup(|app| {
+            // Initialize filesystem and ensure directories exist
+            let filesystem = FileSystem::new()
+                .expect("Failed to initialize filesystem");
+            filesystem.ensure_directories()
+                .expect("Failed to create application directories");
+            
+            app.manage(filesystem);
+            
             #[cfg(debug_assertions)]
             {
                 let window = app.get_webview_window("main").unwrap();
@@ -29,6 +40,12 @@ pub fn run() {
             }
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![
+            commands::list_folders,
+            commands::create_folder,
+            commands::delete_folder,
+            commands::rename_folder,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
