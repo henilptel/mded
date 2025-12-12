@@ -256,42 +256,42 @@
     - _Requirements: 8.3_
 
 
-- [-] 14. Implement System Integration
-  - [-] 14.1 Implement save_screenshot command
+- [x] 14. Implement System Integration
+  - [x] 14.1 Implement save_screenshot command
     - Decode base64 PNG data
     - Save to assets directory with unique filename
     - Return file path for markdown reference
     - _Requirements: 14.1, 14.2_
-  - [ ] 14.2 Write property test for screenshot save returns valid path
+  - [x] 14.2 Write property test for screenshot save returns valid path
     - **Property 15: Screenshot Save Returns Valid Path**
     - **Validates: Requirements 14.1, 14.2**
-  - [ ] 14.3 Implement get_assets_path command
+  - [x] 14.3 Implement get_assets_path command
     - Return absolute path to assets directory
     - _Requirements: 14.3_
-  - [ ] 14.4 Implement read_external_file command
+  - [x] 14.4 Implement read_external_file command
     - Validate .md extension
     - Read and return content, filename, path
     - _Requirements: 15.1, 15.2, 15.3_
-  - [ ] 14.5 Write property test for external file extension validation
+  - [x] 14.5 Write property test for external file extension validation
     - **Property 14: External File Extension Validation**
     - **Validates: Requirements 15.1**
-  - [ ] 14.6 Implement get_auto_start and set_auto_start commands
+  - [x] 14.6 Implement get_auto_start and set_auto_start commands
     - Use tauri-plugin-autostart
     - Configure to launch with --hidden flag
     - _Requirements: 16.1, 16.2, 16.3_
 
-- [ ] 15. Implement Single Instance Lock
-  - [ ] 15.1 Configure tauri-plugin-single-instance
+- [x] 15. Implement Single Instance Lock
+  - [x] 15.1 Configure tauri-plugin-single-instance
     - Focus existing window on second instance
     - _Requirements: 3.1, 3.3_
-  - [ ] 15.2 Handle file argument from second instance
+  - [x] 15.2 Handle file argument from second instance
     - Emit open-file event with file path
     - _Requirements: 3.2_
 
-- [ ] 16. Checkpoint - Ensure all tests pass
+- [x] 16. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 17. Adapt Frontend for Tauri
+- [-] 17. Adapt Frontend for Tauri
   - [ ] 17.1 Create Tauri API bridge (src/renderer/api.ts)
     - Wrap @tauri-apps/api/core invoke calls
     - Match existing window.electron interface

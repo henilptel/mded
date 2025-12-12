@@ -1,4 +1,4 @@
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 pub mod commands;
 pub mod config;
@@ -24,11 +24,26 @@ pub fn run() {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_clipboard_manager::init())
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             // Focus the main window when a second instance is launched
+            // Requirements: 3.1, 3.3
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.set_focus();
+                // First show the window if it's hidden
+                let _ = window.show();
+                // Restore if minimized (Requirement 3.3)
                 let _ = window.unminimize();
+                // Then focus it (Requirement 3.1)
+                let _ = window.set_focus();
+            }
+            
+            // Handle file argument from second instance (Requirement 3.2)
+            // args[0] is typically the executable path, so we check args[1] onwards
+            if args.len() > 1 {
+                let file_path = &args[1];
+                // Only emit if it looks like a file path (not a flag)
+                if !file_path.starts_with('-') && file_path.ends_with(".md") {
+                    let _ = app.emit("open-file", file_path.clone());
+                }
             }
         }))
         .setup(|app| {
@@ -61,6 +76,23 @@ pub fn run() {
             let shortcut_mgr = app.state::<ShortcutManager>();
             if let Err(e) = shortcut_mgr.register_all(app.handle()) {
                 log::warn!("Failed to register some shortcuts: {}", e);
+            }
+            
+            // Handle file argument on initial startup (Requirement 3.2)
+            // This handles the case when the app is launched with a file argument
+            let args: Vec<String> = std::env::args().collect();
+            if args.len() > 1 {
+                let file_path = &args[1];
+                // Only emit if it looks like a file path (not a flag)
+                if !file_path.starts_with('-') && file_path.ends_with(".md") {
+                    let handle = app.handle().clone();
+                    let path = file_path.clone();
+                    // Emit after a short delay to ensure frontend is ready
+                    std::thread::spawn(move || {
+                        std::thread::sleep(std::time::Duration::from_millis(500));
+                        let _ = handle.emit("open-file", path);
+                    });
+                }
             }
             
             #[cfg(debug_assertions)]
@@ -102,6 +134,12 @@ pub fn run() {
             commands::set_window_opacity,
             commands::get_display_info,
             commands::save_window_bounds,
+            // System integration commands
+            commands::save_screenshot,
+            commands::get_assets_path,
+            commands::read_external_file,
+            commands::get_auto_start,
+            commands::set_auto_start,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

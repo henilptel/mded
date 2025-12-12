@@ -848,6 +848,128 @@ impl FileSystem {
         fs::rename(&source_file, &target_file)
             .map_err(|e| format!("Failed to move note '{}': {}", note_id, e))
     }
+
+    // ==================== Screenshot Operations ====================
+
+    /// Saves a screenshot from base64 PNG data.
+    /// 
+    /// Decodes the base64 data and saves it to the assets directory with a unique
+    /// timestamp-based filename.
+    /// 
+    /// # Arguments
+    /// * `base64_data` - The base64-encoded PNG image data (may include data URL prefix)
+    /// 
+    /// # Returns
+    /// * `Ok((String, String))` - Tuple of (image_id, absolute_path)
+    /// * `Err(String)` - If decoding or saving fails
+    /// 
+    /// # Requirements
+    /// Validates: Requirements 14.1, 14.2
+    pub fn save_screenshot(&self, base64_data: &str) -> Result<(String, String), String> {
+        use base64::Engine;
+        use chrono::Utc;
+        
+        // Strip data URL prefix if present (e.g., "data:image/png;base64,")
+        let base64_content = if let Some(pos) = base64_data.find(",") {
+            &base64_data[pos + 1..]
+        } else {
+            base64_data
+        };
+        
+        // Decode base64 data
+        let image_data = base64::engine::general_purpose::STANDARD
+            .decode(base64_content)
+            .map_err(|e| format!("Failed to decode base64 image data: {}", e))?;
+        
+        // Validate that we have some data
+        if image_data.is_empty() {
+            return Err("Image data is empty".to_string());
+        }
+        
+        // Generate unique filename with timestamp
+        let timestamp = Utc::now().format("%Y%m%d%H%M%S%3f").to_string();
+        let image_id = format!("screenshot-{}", timestamp);
+        let file_name = format!("{}.png", image_id);
+        
+        // Ensure assets directory exists
+        if !self.assets_dir.exists() {
+            fs::create_dir_all(&self.assets_dir)
+                .map_err(|e| format!("Failed to create assets directory: {}", e))?;
+        }
+        
+        // Construct the full path
+        let file_path = self.assets_dir.join(&file_name);
+        
+        // Write the image data
+        fs::write(&file_path, &image_data)
+            .map_err(|e| format!("Failed to save screenshot: {}", e))?;
+        
+        Ok((image_id, file_path.to_string_lossy().to_string()))
+    }
+
+    /// Returns the absolute path to the assets directory.
+    /// 
+    /// # Returns
+    /// The absolute path to the assets directory as a string
+    /// 
+    /// # Requirements
+    /// Validates: Requirements 14.3
+    pub fn get_assets_path(&self) -> String {
+        self.assets_dir.to_string_lossy().to_string()
+    }
+
+    // ==================== External File Operations ====================
+
+    /// Reads an external markdown file.
+    /// 
+    /// Validates that the file has a .md extension and reads its content.
+    /// 
+    /// # Arguments
+    /// * `file_path` - The absolute path to the file
+    /// 
+    /// # Returns
+    /// * `Ok((String, String, String))` - Tuple of (content, file_name, absolute_path)
+    /// * `Err(String)` - If validation fails or reading fails
+    /// 
+    /// # Requirements
+    /// Validates: Requirements 15.1, 15.2, 15.3
+    pub fn read_external_file(&self, file_path: &str) -> Result<(String, String, String), String> {
+        let path = std::path::Path::new(file_path);
+        
+        // Validate .md extension
+        match path.extension() {
+            Some(ext) if ext == "md" => {}
+            _ => return Err("File must have .md extension".to_string()),
+        }
+        
+        // Check if file exists
+        if !path.exists() {
+            return Err(format!("File does not exist: {}", file_path));
+        }
+        
+        // Check if it's a file (not a directory)
+        if !path.is_file() {
+            return Err(format!("Path is not a file: {}", file_path));
+        }
+        
+        // Read the file content
+        let content = fs::read_to_string(path)
+            .map_err(|e| format!("Failed to read file: {}", e))?;
+        
+        // Get the file name
+        let file_name = path
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_else(|| "unknown.md".to_string());
+        
+        // Get the absolute path
+        let absolute_path = path
+            .canonicalize()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|_| file_path.to_string());
+        
+        Ok((content, file_name, absolute_path))
+    }
 }
 
 #[cfg(test)]
@@ -1654,5 +1776,267 @@ mod tests {
                 );
             }
         }
+
+        /// **Feature: mded-tauri-migration, Property 15: Screenshot Save Returns Valid Path**
+        /// **Validates: Requirements 14.1, 14.2**
+        /// 
+        /// For any valid base64 PNG image data, saving it should return a path
+        /// that exists in the assets directory.
+        #[test]
+        fn prop_screenshot_save_returns_valid_path(
+            // Generate random bytes for image data (simulating PNG content)
+            image_bytes in proptest::collection::vec(any::<u8>(), 10..1000),
+        ) {
+            use base64::Engine;
+            
+            let temp_dir = tempdir().unwrap();
+            let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+            fs.ensure_directories().unwrap();
+            
+            // Encode the bytes as base64
+            let base64_data = base64::engine::general_purpose::STANDARD.encode(&image_bytes);
+            
+            // Save the screenshot
+            let result = fs.save_screenshot(&base64_data);
+            prop_assert!(result.is_ok(), "save_screenshot failed: {:?}", result.err());
+            
+            let (image_id, image_path) = result.unwrap();
+            
+            // Verify the image_id matches the expected pattern: screenshot-{timestamp}
+            let id_pattern = regex::Regex::new(r"^screenshot-\d{17}$").unwrap();
+            prop_assert!(
+                id_pattern.is_match(&image_id),
+                "Image ID '{}' does not match pattern 'screenshot-{{timestamp}}'",
+                image_id
+            );
+            
+            // Verify the file exists
+            let path = std::path::Path::new(&image_path);
+            prop_assert!(
+                path.exists(),
+                "Screenshot file does not exist at '{}'",
+                image_path
+            );
+            
+            // Verify the file is in the assets directory
+            prop_assert!(
+                path.starts_with(&fs.assets_dir),
+                "Screenshot path '{}' is not in assets directory '{}'",
+                image_path,
+                fs.assets_dir.display()
+            );
+            
+            // Verify the file has .png extension
+            prop_assert!(
+                image_path.ends_with(".png"),
+                "Screenshot path '{}' does not have .png extension",
+                image_path
+            );
+            
+            // Verify the file content matches the original bytes
+            let saved_content = std::fs::read(&path).unwrap();
+            prop_assert_eq!(
+                &image_bytes,
+                &saved_content,
+                "Saved content does not match original bytes"
+            );
+        }
+    }
+
+    // Additional unit tests for screenshot functionality
+    #[test]
+    fn test_save_screenshot_with_data_url_prefix() {
+        use base64::Engine;
+        
+        let temp_dir = tempdir().unwrap();
+        let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+        fs.ensure_directories().unwrap();
+        
+        let image_bytes = vec![0x89, 0x50, 0x4E, 0x47]; // PNG magic bytes
+        let base64_data = base64::engine::general_purpose::STANDARD.encode(&image_bytes);
+        let data_url = format!("data:image/png;base64,{}", base64_data);
+        
+        let result = fs.save_screenshot(&data_url);
+        assert!(result.is_ok());
+        
+        let (_, image_path) = result.unwrap();
+        let saved_content = std::fs::read(&image_path).unwrap();
+        assert_eq!(image_bytes, saved_content);
+    }
+
+    #[test]
+    fn test_save_screenshot_empty_data() {
+        let temp_dir = tempdir().unwrap();
+        let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+        fs.ensure_directories().unwrap();
+        
+        // Empty base64 decodes to empty bytes
+        let result = fs.save_screenshot("");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("empty"));
+    }
+
+    #[test]
+    fn test_save_screenshot_invalid_base64() {
+        let temp_dir = tempdir().unwrap();
+        let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+        fs.ensure_directories().unwrap();
+        
+        let result = fs.save_screenshot("not-valid-base64!!!");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("decode"));
+    }
+
+    #[test]
+    fn test_get_assets_path() {
+        let temp_dir = tempdir().unwrap();
+        let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+        
+        let assets_path = fs.get_assets_path();
+        assert!(assets_path.contains("assets"));
+        assert_eq!(assets_path, fs.assets_dir.to_string_lossy().to_string());
+    }
+
+    // Strategy for generating non-.md file extensions
+    fn non_md_extension() -> impl Strategy<Value = String> {
+        prop_oneof![
+            Just("txt".to_string()),
+            Just("doc".to_string()),
+            Just("pdf".to_string()),
+            Just("html".to_string()),
+            Just("json".to_string()),
+            Just("xml".to_string()),
+            Just("rs".to_string()),
+            Just("py".to_string()),
+            Just("js".to_string()),
+            Just("css".to_string()),
+            Just("".to_string()),  // No extension
+            "[a-zA-Z]{1,5}".prop_filter("Must not be md", |s| s.to_lowercase() != "md"),
+        ]
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(100))]
+
+        /// **Feature: mded-tauri-migration, Property 14: External File Extension Validation**
+        /// **Validates: Requirements 15.1**
+        /// 
+        /// For any file path not ending in ".md", the external file reader should
+        /// reject it with an error.
+        #[test]
+        fn prop_external_file_extension_validation(
+            file_name in "[a-zA-Z][a-zA-Z0-9_-]{0,20}",
+            extension in non_md_extension(),
+        ) {
+            let temp_dir = tempdir().unwrap();
+            let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+            fs.ensure_directories().unwrap();
+            
+            // Create a file with the non-.md extension
+            let full_name = if extension.is_empty() {
+                file_name.clone()
+            } else {
+                format!("{}.{}", file_name, extension)
+            };
+            let file_path = temp_dir.path().join(&full_name);
+            std::fs::write(&file_path, "test content").unwrap();
+            
+            // Try to read the file
+            let result = fs.read_external_file(file_path.to_str().unwrap());
+            
+            // Should fail with extension error
+            prop_assert!(
+                result.is_err(),
+                "read_external_file should reject file '{}' without .md extension",
+                full_name
+            );
+            prop_assert!(
+                result.as_ref().unwrap_err().contains(".md"),
+                "Error message should mention .md extension requirement, got: {}",
+                result.unwrap_err()
+            );
+        }
+
+        /// Test that .md files are accepted
+        #[test]
+        fn prop_external_file_accepts_md_extension(
+            file_name in "[a-zA-Z][a-zA-Z0-9_-]{0,20}",
+            content in ".*",
+        ) {
+            let temp_dir = tempdir().unwrap();
+            let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+            fs.ensure_directories().unwrap();
+            
+            // Create a .md file
+            let full_name = format!("{}.md", file_name);
+            let file_path = temp_dir.path().join(&full_name);
+            std::fs::write(&file_path, &content).unwrap();
+            
+            // Try to read the file
+            let result = fs.read_external_file(file_path.to_str().unwrap());
+            
+            // Should succeed
+            prop_assert!(
+                result.is_ok(),
+                "read_external_file should accept .md file '{}', got error: {:?}",
+                full_name,
+                result.err()
+            );
+            
+            let (read_content, read_name, read_path) = result.unwrap();
+            
+            // Verify content matches
+            prop_assert_eq!(
+                &content,
+                &read_content,
+                "Content mismatch: expected '{}', got '{}'",
+                &content,
+                &read_content
+            );
+            
+            // Verify file name matches
+            prop_assert_eq!(
+                &full_name,
+                &read_name,
+                "File name mismatch: expected '{}', got '{}'",
+                &full_name,
+                &read_name
+            );
+            
+            // Verify path is absolute
+            prop_assert!(
+                std::path::Path::new(&read_path).is_absolute(),
+                "Returned path '{}' should be absolute",
+                read_path
+            );
+        }
+    }
+
+    // Unit tests for external file reading
+    #[test]
+    fn test_read_external_file_not_exists() {
+        let temp_dir = tempdir().unwrap();
+        let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+        
+        let file_path = temp_dir.path().join("nonexistent.md");
+        let result = fs.read_external_file(file_path.to_str().unwrap());
+        
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("does not exist"));
+    }
+
+    #[test]
+    fn test_read_external_file_is_directory() {
+        let temp_dir = tempdir().unwrap();
+        let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+        
+        // Create a directory with .md name (unusual but possible)
+        let dir_path = temp_dir.path().join("folder.md");
+        std::fs::create_dir(&dir_path).unwrap();
+        
+        let result = fs.read_external_file(dir_path.to_str().unwrap());
+        
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("not a file"));
     }
 }
