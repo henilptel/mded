@@ -4,11 +4,13 @@ pub mod commands;
 pub mod config;
 pub mod filesystem;
 pub mod models;
+pub mod shortcuts;
 pub mod tray;
 pub mod window;
 
 use config::ConfigManager;
 use filesystem::FileSystem;
+use shortcuts::ShortcutManager;
 use window::WindowManager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -43,13 +45,23 @@ pub fn run() {
             // Initialize window manager
             let window_manager = WindowManager::new();
             
+            // Initialize shortcut manager
+            let shortcut_manager = ShortcutManager::new();
+            
             app.manage(filesystem);
             app.manage(config_manager);
             app.manage(window_manager);
+            app.manage(shortcut_manager);
             
             // Set up system tray
             tray::setup_tray(app.handle())
                 .expect("Failed to setup system tray");
+            
+            // Register global shortcuts
+            let shortcut_mgr = app.state::<ShortcutManager>();
+            if let Err(e) = shortcut_mgr.register_all(app.handle()) {
+                log::warn!("Failed to register some shortcuts: {}", e);
+            }
             
             #[cfg(debug_assertions)]
             {

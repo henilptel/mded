@@ -1,6 +1,7 @@
-use tauri::State;
+use tauri::{AppHandle, State};
 use crate::config::ConfigManager;
 use crate::models::{ApiResult, LastNote};
+use crate::shortcuts::ShortcutManager;
 
 /// Gets the last opened note information.
 /// 
@@ -45,16 +46,26 @@ pub async fn get_global_shortcut(config: State<'_, ConfigManager>) -> Result<Str
 
 /// Sets the global shortcut configuration.
 /// 
+/// Validates the shortcut, re-registers it with the system, and persists to config.
+/// 
 /// # Arguments
 /// * `key` - The new shortcut string
 /// 
 /// # Requirements
-/// Validates: Requirements 7.4
+/// Validates: Requirements 7.4, 7.5
 #[tauri::command]
 pub async fn set_global_shortcut(
     key: String,
+    app: AppHandle,
     config: State<'_, ConfigManager>,
+    shortcut_manager: State<'_, ShortcutManager>,
 ) -> Result<ApiResult, String> {
+    // Validate and register the new shortcut
+    if let Err(e) = shortcut_manager.update_toggle_shortcut(&app, &key) {
+        return Ok(ApiResult::error(e));
+    }
+    
+    // Update config (already done in update_toggle_shortcut, but ensure it's saved)
     config.set_global_shortcut(key);
     config.schedule_save().await;
     Ok(ApiResult::success())

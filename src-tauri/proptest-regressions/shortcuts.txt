@@ -1,0 +1,10 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc ae9a65c3ac6353067877bc33704055c3afc66ec5094860526e1ed5277564305d # shrinks to shortcut = "0"
+cc f86f2d9a06cbca762ed39cf41f4752ad2bd84fcf5279210dd15af1a3d39dad5d # shrinks to shortcut = "0"
+cc 479b5852d917caa01b84ece8272c2cbfae4f7eb37b809c9a1a515ecf15e9cde3 # shrinks to shortcut = "Ctrl + A"
+cc ecc6daf1aac29fae40e1297214ec2b6ce93804b13da8a8d58729e54dc95e3453 # shrinks to shortcut = "Ctrl + A"

@@ -222,27 +222,27 @@
     - Handle menu item clicks
     - _Requirements: 4.3, 4.4_
 
-- [-] 12. Implement Global Shortcuts
-  - [-] 12.1 Create ShortcutManager struct
+- [ ] 12. Implement Global Shortcuts
+  - [x] 12.1 Create ShortcutManager struct
     - Track registered shortcuts
     - _Requirements: 7.1_
-  - [ ] 12.2 Register toggle shortcut on startup
+  - [x] 12.2 Register toggle shortcut on startup
     - Default: CommandOrControl+Shift+N
     - Toggle window visibility on trigger
     - _Requirements: 7.1_
-  - [ ] 12.3 Register clipboard capture shortcut
+  - [x] 12.3 Register clipboard capture shortcut
     - Default: CommandOrControl+Alt+V
     - Create note from clipboard, show notification
     - _Requirements: 7.2_
-  - [ ] 12.4 Register quick note shortcut
+  - [x] 12.4 Register quick note shortcut
     - Default: CommandOrControl+Alt+N
     - Open quick note popup window
     - _Requirements: 7.3_
-  - [ ] 12.5 Write property test for shortcut registration error handling
+  - [x] 12.5 Write property test for shortcut registration error handling
     - **Property: Invalid shortcut registration returns error**
     - **Validates: Requirements 7.5**
 
-- [ ] 13. Implement Quick Note Window
+- [-] 13. Implement Quick Note Window
   - [ ] 13.1 Create quick note window configuration
     - Frameless, transparent, always-on-top, skip taskbar
     - Position in top-right corner of screen
