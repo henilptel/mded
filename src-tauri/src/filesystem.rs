@@ -484,8 +484,7 @@ impl FileSystem {
         Ok(config.pinned_notes)
     }
 
-    /// Saves pinned notes to config file (for testing purposes).
-    #[cfg(test)]
+    /// Saves pinned notes to config file.
     pub fn save_pinned_notes(&self, pinned_notes: Vec<String>) -> Result<(), String> {
         use crate::models::Config;
         
@@ -504,6 +503,85 @@ impl FileSystem {
         
         fs::write(&self.config_file, content)
             .map_err(|e| format!("Failed to write config file: {}", e))
+    }
+
+    /// Toggles the pin status of a note.
+    /// 
+    /// If the note is currently pinned, it will be unpinned.
+    /// If the note is currently unpinned, it will be pinned.
+    /// 
+    /// # Arguments
+    /// * `note_id` - The ID of the note to toggle
+    /// 
+    /// # Returns
+    /// * `Ok(bool)` - The new pinned status (true if now pinned, false if now unpinned)
+    /// * `Err(String)` - If the operation fails
+    /// 
+    /// # Requirements
+    /// Validates: Requirements 12.1
+    pub fn toggle_pin_note(&self, note_id: &str) -> Result<bool, String> {
+        let mut pinned_notes = self.load_pinned_notes()?;
+        
+        let new_pinned_status = if let Some(pos) = pinned_notes.iter().position(|id| id == note_id) {
+            // Note is currently pinned, remove it
+            pinned_notes.remove(pos);
+            false
+        } else {
+            // Note is not pinned, add it
+            pinned_notes.push(note_id.to_string());
+            true
+        };
+        
+        // Save the updated pinned notes list
+        self.save_pinned_notes(pinned_notes)?;
+        
+        Ok(new_pinned_status)
+    }
+
+    /// Gets the custom note ordering from note-order.json.
+    /// 
+    /// Returns a map of folder names to ordered note ID arrays.
+    /// Returns an empty map if the file doesn't exist.
+    /// 
+    /// # Returns
+    /// * `Ok(HashMap<String, Vec<String>>)` - The note ordering map
+    /// * `Err(String)` - If reading fails
+    /// 
+    /// # Requirements
+    /// Validates: Requirements 12.2
+    pub fn get_note_order(&self) -> Result<std::collections::HashMap<String, Vec<String>>, String> {
+        use std::collections::HashMap;
+        
+        if !self.order_file.exists() {
+            return Ok(HashMap::new());
+        }
+        
+        let content = fs::read_to_string(&self.order_file)
+            .map_err(|e| format!("Failed to read note order file: {}", e))?;
+        
+        let order: HashMap<String, Vec<String>> = serde_json::from_str(&content)
+            .map_err(|e| format!("Failed to parse note order file: {}", e))?;
+        
+        Ok(order)
+    }
+
+    /// Saves the custom note ordering to note-order.json.
+    /// 
+    /// # Arguments
+    /// * `order` - A map of folder names to ordered note ID arrays
+    /// 
+    /// # Returns
+    /// * `Ok(())` - If save was successful
+    /// * `Err(String)` - If saving fails
+    /// 
+    /// # Requirements
+    /// Validates: Requirements 12.3
+    pub fn save_note_order(&self, order: std::collections::HashMap<String, Vec<String>>) -> Result<(), String> {
+        let content = serde_json::to_string_pretty(&order)
+            .map_err(|e| format!("Failed to serialize note order: {}", e))?;
+        
+        fs::write(&self.order_file, content)
+            .map_err(|e| format!("Failed to write note order file: {}", e))
     }
 
     /// Reads the content of a note.
@@ -1447,6 +1525,134 @@ mod tests {
                 !source_path.exists(),
                 "Note still exists in source folder after move"
             );
+        }
+
+        /// **Feature: mded-tauri-migration, Property 13: Pin Toggle Idempotence**
+        /// **Validates: Requirements 12.1**
+        /// 
+        /// For any note, toggling pin status twice should return the note to its
+        /// original pinned state.
+        #[test]
+        fn prop_pin_toggle_idempotence(
+            initial_pinned in any::<bool>(),
+        ) {
+            let temp_dir = tempdir().unwrap();
+            let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+            fs.ensure_directories().unwrap();
+            
+            // Create a note
+            let (note_id, _) = fs.create_note(None).unwrap();
+            
+            // Set initial pinned state
+            if initial_pinned {
+                fs.toggle_pin_note(&note_id).unwrap();
+            }
+            
+            // Verify initial state
+            let pinned_before = fs.load_pinned_notes().unwrap().contains(&note_id);
+            prop_assert_eq!(
+                pinned_before,
+                initial_pinned,
+                "Initial pinned state mismatch: expected {}, got {}",
+                initial_pinned,
+                pinned_before
+            );
+            
+            // Toggle pin status twice
+            let after_first_toggle = fs.toggle_pin_note(&note_id).unwrap();
+            let after_second_toggle = fs.toggle_pin_note(&note_id).unwrap();
+            
+            // Verify first toggle changed the state
+            prop_assert_eq!(
+                after_first_toggle,
+                !initial_pinned,
+                "First toggle should flip state from {} to {}",
+                initial_pinned,
+                !initial_pinned
+            );
+            
+            // Verify second toggle restored the original state
+            prop_assert_eq!(
+                after_second_toggle,
+                initial_pinned,
+                "Second toggle should restore original state: expected {}, got {}",
+                initial_pinned,
+                after_second_toggle
+            );
+            
+            // Verify final state in config matches
+            let final_pinned = fs.load_pinned_notes().unwrap().contains(&note_id);
+            prop_assert_eq!(
+                final_pinned,
+                initial_pinned,
+                "Final pinned state in config mismatch: expected {}, got {}",
+                initial_pinned,
+                final_pinned
+            );
+        }
+
+        /// **Feature: mded-tauri-migration, Property 2: Note Order Round-Trip**
+        /// **Validates: Requirements 12.2, 12.3**
+        /// 
+        /// For any valid note ordering (map of folder to note ID arrays), saving
+        /// the order and then retrieving it should return the exact same ordering.
+        #[test]
+        fn prop_note_order_round_trip(
+            folder_count in 0usize..5,
+            notes_per_folder in 0usize..10,
+        ) {
+            use std::collections::HashMap;
+            
+            let temp_dir = tempdir().unwrap();
+            let fs = FileSystem::new_with_base(temp_dir.path()).unwrap();
+            fs.ensure_directories().unwrap();
+            
+            // Generate a note order map
+            let mut order: HashMap<String, Vec<String>> = HashMap::new();
+            
+            for i in 0..folder_count {
+                let folder_name = format!("folder-{}", i);
+                let mut note_ids: Vec<String> = Vec::new();
+                
+                for j in 0..notes_per_folder {
+                    note_ids.push(format!("note-{}-{}", i, j));
+                }
+                
+                order.insert(folder_name, note_ids);
+            }
+            
+            // Save the order
+            fs.save_note_order(order.clone()).unwrap();
+            
+            // Read it back
+            let read_order = fs.get_note_order().unwrap();
+            
+            // Verify the order matches
+            prop_assert_eq!(
+                order.len(),
+                read_order.len(),
+                "Order map size mismatch: expected {}, got {}",
+                order.len(),
+                read_order.len()
+            );
+            
+            for (folder, notes) in &order {
+                prop_assert!(
+                    read_order.contains_key(folder),
+                    "Folder '{}' missing from read order",
+                    folder
+                );
+                
+                let read_notes = read_order.get(folder).unwrap();
+                prop_assert_eq!(
+                    notes,
+                    read_notes,
+                    "Notes mismatch for folder '{}': expected {:?}, got {:?}",
+                    folder,
+                    notes,
+                    read_notes
+                );
+            }
         }
     }
 }

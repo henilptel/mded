@@ -52,6 +52,9 @@ pub fn run() {
             commands::delete_note,
             commands::rename_note,
             commands::move_note,
+            commands::toggle_pin_note,
+            commands::get_note_order,
+            commands::save_note_order,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

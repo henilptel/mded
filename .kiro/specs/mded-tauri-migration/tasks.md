@@ -113,29 +113,29 @@
     - **Property 12: Note Move Preserves Content**
     - **Validates: Requirements 11.8**
 
-- [ ] 6. Implement Note Pinning and Ordering
-  - [ ] 6.1 Implement toggle_pin_note command
+- [x] 6. Implement Note Pinning and Ordering
+  - [x] 6.1 Implement toggle_pin_note command
     - Add/remove note from pinned_notes list in config
     - Return new pinned status
     - _Requirements: 12.1_
-  - [ ] 6.2 Write property test for pin toggle idempotence
+  - [x] 6.2 Write property test for pin toggle idempotence
     - **Property 13: Pin Toggle Idempotence**
     - **Validates: Requirements 12.1**
-  - [ ] 6.3 Implement get_note_order command
+  - [x] 6.3 Implement get_note_order command
     - Read and return note-order.json content
     - Return empty map if file doesn't exist
     - _Requirements: 12.2_
-  - [ ] 6.4 Implement save_note_order command
+  - [x] 6.4 Implement save_note_order command
     - Write ordering to note-order.json
     - _Requirements: 12.3_
-  - [ ] 6.5 Write property test for note order round-trip
+  - [x] 6.5 Write property test for note order round-trip
     - **Property 2: Note Order Round-Trip**
     - **Validates: Requirements 12.2, 12.3**
 
-- [ ] 7. Checkpoint - Ensure all tests pass
+- [x] 7. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 8. Implement Config Module
+- [-] 8. Implement Config Module
   - [ ] 8.1 Create ConfigManager with load/save functionality
     - Implement Default trait for Config
     - Load config merging with defaults

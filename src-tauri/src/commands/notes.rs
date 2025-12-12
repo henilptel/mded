@@ -143,3 +143,60 @@ pub async fn move_note(
         Err(e) => Ok(ApiResult::error(e)),
     }
 }
+
+/// Toggles the pin status of a note.
+/// 
+/// If the note is currently pinned, it will be unpinned.
+/// If the note is currently unpinned, it will be pinned.
+/// 
+/// # Arguments
+/// * `note_id` - The ID of the note to toggle
+/// 
+/// # Requirements
+/// Validates: Requirements 12.1
+#[tauri::command]
+pub async fn toggle_pin_note(
+    note_id: String,
+    filesystem: State<'_, FileSystem>,
+) -> Result<ApiResult, String> {
+    match filesystem.toggle_pin_note(&note_id) {
+        Ok(pinned) => Ok(ApiResult {
+            success: true,
+            pinned: Some(pinned),
+            ..Default::default()
+        }),
+        Err(e) => Ok(ApiResult::error(e)),
+    }
+}
+
+/// Gets the custom note ordering.
+/// 
+/// Returns a map of folder names to ordered note ID arrays.
+/// Returns an empty map if no custom ordering exists.
+/// 
+/// # Requirements
+/// Validates: Requirements 12.2
+#[tauri::command]
+pub async fn get_note_order(
+    filesystem: State<'_, FileSystem>,
+) -> Result<std::collections::HashMap<String, Vec<String>>, String> {
+    filesystem.get_note_order()
+}
+
+/// Saves the custom note ordering.
+/// 
+/// # Arguments
+/// * `order` - A map of folder names to ordered note ID arrays
+/// 
+/// # Requirements
+/// Validates: Requirements 12.3
+#[tauri::command]
+pub async fn save_note_order(
+    order: std::collections::HashMap<String, Vec<String>>,
+    filesystem: State<'_, FileSystem>,
+) -> Result<ApiResult, String> {
+    match filesystem.save_note_order(order) {
+        Ok(()) => Ok(ApiResult::success()),
+        Err(e) => Ok(ApiResult::error(e)),
+    }
+}
