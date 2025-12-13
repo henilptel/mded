@@ -28,12 +28,12 @@ export interface ApiResult {
   success: boolean;
   error?: string;
   content?: string;
-  noteId?: string;
+  note_id?: string;
   folder?: string;
-  imagePath?: string;
-  imageId?: string;
-  fileName?: string;
-  filePath?: string;
+  image_path?: string;
+  image_id?: string;
+  file_name?: string;
+  file_path?: string;
   pinned?: boolean;
   opacity?: number;
 }
@@ -83,29 +83,14 @@ export const tauriAPI = {
     return notes.map(convertNoteInfo);
   },
   
-  readNote: async (noteId: string, folder?: string): Promise<ApiResult> => {
-    try {
-      return await invoke<ApiResult>('read_note', { noteId, folder: folder ?? null });
-    } catch (error) {
-      return { success: false, error: String(error) };
-    }
-  },
+  readNote: (noteId: string, folder?: string): Promise<ApiResult> => 
+    invoke<ApiResult>('read_note', { noteId, folder: folder ?? null }),
   
-  saveNote: async (noteId: string, content: string, folder?: string): Promise<ApiResult> => {
-    try {
-      return await invoke<ApiResult>('save_note', { noteId, content, folder: folder ?? null });
-    } catch (error) {
-      return { success: false, error: String(error) };
-    }
-  },
+  saveNote: (noteId: string, content: string, folder?: string): Promise<ApiResult> => 
+    invoke<ApiResult>('save_note', { noteId, content, folder: folder ?? null }),
   
-  createNote: async (folder?: string): Promise<ApiResult> => {
-    try {
-      return await invoke<ApiResult>('create_note', { folder: folder ?? null });
-    } catch (error) {
-      return { success: false, error: String(error) };
-    }
-  },
+  createNote: (folder?: string): Promise<ApiResult> => 
+    invoke<ApiResult>('create_note', { folder: folder ?? null }),
   
   deleteNote: (noteId: string, folder?: string): Promise<ApiResult> => 
     invoke<ApiResult>('delete_note', { noteId, folder: folder ?? null }),

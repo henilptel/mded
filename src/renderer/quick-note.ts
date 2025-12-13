@@ -12,7 +12,12 @@
 // Initialize Tauri API bridge - must be first import to set up window.electron
 import './api';
 
-const input = document.getElementById('quick-input') as HTMLTextAreaElement;
+const input = document.getElementById('quick-input') as HTMLTextAreaElement | null;
+
+if (!input) {
+    console.error('Quick note input element not found');
+    throw new Error('Quick note input element not found');
+}
 
 // Focus the input on load
 input.focus();

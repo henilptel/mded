@@ -341,16 +341,20 @@ export class EditorManager {
                   console.error('Failed to read pasted image');
               };
               reader.onload = async () => {
-                  const base64Data = reader.result as string;
-                  const result = await (window as any).electron.saveScreenshot(base64Data);
-                  
-                  if (result.success && result.imagePath) {
-                      const markdownImg = `![screenshot](${result.imagePath})\n`;
-                      document.execCommand('insertText', false, markdownImg);
-                      this.updatePreview();
-                      this.onInput?.();
-                  } else {
-                      console.error('Failed to save screenshot:', result.error);
+                  try {
+                      const base64Data = reader.result as string;
+                      const result = await (window as any).electron.saveScreenshot(base64Data);
+                      
+                      if (result.success && result.imagePath) {
+                          const markdownImg = `![screenshot](${result.imagePath})\n`;
+                          document.execCommand('insertText', false, markdownImg);
+                          this.updatePreview();
+                          this.onInput?.();
+                      } else {
+                          console.error('Failed to save screenshot:', result.error);
+                      }
+                  } catch (err) {
+                      console.error('Failed to save screenshot:', err);
                   }
               };
               reader.readAsDataURL(file);

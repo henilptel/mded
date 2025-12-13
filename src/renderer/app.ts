@@ -110,6 +110,9 @@ async function closeTab(index: number) {
   if (index < 0 || index >= openTabs.length) return;
   
   const tab = openTabs[index];
+  const tabId = tab.id;
+  const tabFolder = tab.folder;
+
   if (tab.modified) {
     try {
       await noteManager.saveNote(tab.id, tab.content, tab.folder);
@@ -118,24 +121,42 @@ async function closeTab(index: number) {
       const decision = await showSaveErrorModal(
         `Failed to save "${tab.title}". What would you like to do?`
       );
+      
+      // Re-locate the tab by ID and folder as the index might have changed
+      const currentTabIndex = findTabIndex(tabId, tabFolder);
+      if (currentTabIndex === -1) {
+        // Tab no longer exists, nothing to close
+        return;
+      }
+
       if (decision === 'retry') {
-        return closeTab(index);
+        return closeTab(currentTabIndex);
       } else if (decision === 'cancel') {
         return;
       }
-      // decision === 'discard' - fall through to close without saving
+      // decision === 'discard' - proceed to close without saving
+      // Update index for splice in case it changed
+      index = currentTabIndex;
     }
   }
   
-  openTabs.splice(index, 1);
+  // Re-verify index just in case (e.g. if we didn't go through the error modal but async stuff happened)
+  // Although noteManager.saveNote is await-ed, if it succeeds quickly we assume index is stable enough,
+  // but to be absolutely safe we could re-locate even on success path. 
+  // For now, the critical path is the modal interaction.
+  // Let's re-locate for splice to be safe if we came from discard path.
+  const indexToClose = findTabIndex(tabId, tabFolder);
+  if (indexToClose === -1) return;
+
+  openTabs.splice(indexToClose, 1);
   
   if (openTabs.length === 0) {
     activeTabIndex = -1;
     editorManager.clear();
     noteManager.setCurrentNote(null);
-  } else if (index < activeTabIndex) {
+  } else if (indexToClose < activeTabIndex) {
     activeTabIndex--;
-  } else if (index === activeTabIndex) {
+  } else if (indexToClose === activeTabIndex) {
     activeTabIndex = Math.min(activeTabIndex, openTabs.length - 1);
     const newTab = openTabs[activeTabIndex];
     editorManager.setContent(newTab.content);
