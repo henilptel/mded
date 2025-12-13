@@ -644,8 +644,8 @@ export class EditorManager {
 
   updateStats(): void {
     const content = this.getContent();
-    const total = (content.match(/- \[[ xX]\]/g) || []).length;
-    const completed = (content.match(/- \[[xX]\]/g) || []).length;
+    const total = (content.match(/[-*+] \[[ xX]\]/g) || []).length;
+    const completed = (content.match(/[-*+] \[[xX]\]/g) || []).length;
     this.onStatsUpdate?.(completed, total);
   }
 

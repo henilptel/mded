@@ -9,12 +9,13 @@
 
 These are blocking issues that affect core usability.
 
-- [ ] **Replace textarea with CodeMirror 6** - Current textarea lacks proper editing features
+- [x] **Replace textarea with CodeMirror 6** ✅ DONE
   - Inline markdown rendering (headers, bold, italic render while typing)
   - Proper undo/redo with history persistence
   - Better cursor handling and selection
   - Syntax highlighting in edit mode
   - ~50KB bundle, highly performant
+  - Lazy-loaded highlight.js for code blocks
   
 - [ ] **Full-text search** - Currently only searches titles
   - Search note content, not just filenames

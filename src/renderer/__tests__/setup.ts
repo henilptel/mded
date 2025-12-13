@@ -45,12 +45,42 @@ if (!Element.prototype.getClientRects) {
 const originalConsoleError = console.error;
 
 beforeAll(() => {
-  // Suppress specific CodeMirror errors that occur in jsdom
+  // Suppress specific CodeMirror DOM measurement errors that occur in jsdom
   console.error = (...args: unknown[]) => {
-    const message = args[0]?.toString() || '';
-    if (message.includes('getClientRects') || message.includes('textRange')) {
+    const firstArg = args[0];
+    
+    // Safely extract message string from first argument
+    let message = '';
+    if (typeof firstArg === 'string') {
+      message = firstArg;
+    } else if (firstArg instanceof Error) {
+      message = firstArg.message;
+    } else if (firstArg != null) {
+      message = String(firstArg);
+    }
+    
+    // Safely extract stack trace if available
+    let stack = '';
+    if (firstArg instanceof Error && firstArg.stack) {
+      stack = firstArg.stack;
+    }
+    
+    // Check for DOM measurement substrings
+    const hasDOMMeasurementError = message.includes('getClientRects') || message.includes('textRange');
+    
+    // Check for CodeMirror indicator in message or stack
+    const hasCodeMirrorIndicator = 
+      message.includes('CodeMirror') || 
+      message.includes('@codemirror') ||
+      stack.includes('CodeMirror') ||
+      stack.includes('@codemirror') ||
+      /\bcm-/.test(message);
+    
+    // Only suppress when BOTH conditions are met
+    if (hasDOMMeasurementError && hasCodeMirrorIndicator) {
       return; // Suppress CodeMirror DOM measurement errors
     }
+    
     originalConsoleError.apply(console, args);
   };
   
