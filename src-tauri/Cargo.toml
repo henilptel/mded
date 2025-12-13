@@ -4,7 +4,7 @@ version = "2.0.0"
 description = "Minimalistic Markdown Editor with VisionOS glassmorphism design"
 authors = ["henilptel <henilptel@gmail.com>"]
 license = "MIT"
-repository = ""
+repository = "https://github.com/henilptel/mded"
 edition = "2021"
 
 [lib]

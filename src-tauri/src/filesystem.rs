@@ -257,8 +257,33 @@ impl FileSystem {
     /// 
     /// # Requirements
     /// Validates: Requirements 10.2
+    /// Checks if a folder name is protected/reserved.
+    pub fn is_protected_name(&self, name: &str) -> bool {
+        matches!(name, "All Notes" | "Trash")
+    }
+
+    /// Creates a new folder in the notes directory.
+    /// 
+    /// # Arguments
+    /// * `name` - The name of the folder to create
+    /// 
+    /// # Returns
+    /// * `Ok(())` - If the folder was created successfully
+    /// * `Err(String)` - If validation fails or creation fails
+    /// 
+    /// # Requirements
+    /// Validates: Requirements 10.2
     pub fn create_folder(&self, name: &str) -> Result<(), String> {
         // Validate the folder name
+        // Validate the folder name
+        if name.trim().is_empty() {
+             return Err("Folder name cannot be empty or whitespace only".to_string());
+        }
+        
+        if self.is_protected_name(name) {
+            return Err(format!("'{}' is a protected folder name", name));
+        }
+
         let folder_path = self.validate_notes_path(name)?;
         
         // Check if folder already exists
@@ -286,6 +311,14 @@ impl FileSystem {
     /// Validates: Requirements 10.3
     pub fn delete_folder(&self, name: &str) -> Result<(), String> {
         // Validate the folder name
+        if name.trim().is_empty() {
+             return Err("Folder name cannot be empty or whitespace only".to_string());
+        }
+
+        if self.is_protected_name(name) {
+             return Err(format!("Cannot delete protected folder '{}'", name));
+        }
+
         let folder_path = self.validate_notes_path(name)?;
         
         // Check if folder exists
@@ -319,6 +352,18 @@ impl FileSystem {
     /// Validates: Requirements 10.4
     pub fn rename_folder(&self, old_name: &str, new_name: &str) -> Result<(), String> {
         // Validate both folder names
+        if old_name.trim().is_empty() || new_name.trim().is_empty() {
+             return Err("Folder name cannot be empty or whitespace only".to_string());
+        }
+
+        if self.is_protected_name(old_name) {
+             return Err(format!("Cannot rename protected folder '{}'", old_name));
+        }
+        
+        if self.is_protected_name(new_name) {
+             return Err(format!("Cannot rename to protected name '{}'", new_name));
+        }
+
         let old_path = self.validate_notes_path(old_name)?;
         let new_path = self.validate_notes_path(new_name)?;
         
