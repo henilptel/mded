@@ -10,7 +10,5 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
     },
-    // Suppress unhandled errors from CodeMirror's DOM operations in jsdom
-    dangerouslyIgnoreUnhandledErrors: true,
   },
 });

@@ -193,8 +193,8 @@ export class EditorManager {
             // Continue with unchecked checkbox
             const newLine = `\n${indent}${bullet} [ ] `;
             view.dispatch({
-              changes: { from: selection.from, to: selection.from, insert: newLine },
-              selection: { anchor: selection.from + newLine.length }
+              changes: { from: line.to, to: line.to, insert: newLine },
+              selection: { anchor: line.to + newLine.length }
             });
             return true;
           }
@@ -216,8 +216,8 @@ export class EditorManager {
             const nextNum = parseInt(num, 10) + 1;
             const newLine = `\n${indent}${nextNum}. `;
             view.dispatch({
-              changes: { from: selection.from, to: selection.from, insert: newLine },
-              selection: { anchor: selection.from + newLine.length }
+              changes: { from: line.to, to: line.to, insert: newLine },
+              selection: { anchor: line.to + newLine.length }
             });
             return true;
           }
@@ -238,8 +238,8 @@ export class EditorManager {
             // Continue with same bullet
             const newLine = `\n${indent}${bullet} `;
             view.dispatch({
-              changes: { from: selection.from, to: selection.from, insert: newLine },
-              selection: { anchor: selection.from + newLine.length }
+              changes: { from: line.to, to: line.to, insert: newLine },
+              selection: { anchor: line.to + newLine.length }
             });
             return true;
           }
@@ -654,15 +654,16 @@ export class EditorManager {
    * @param index The index of the checkbox to toggle (0-based)
    */
   toggleCheckbox(index: number): void {
-    const regex = /- \[[ xX]\]/g;
+    const regex = /([-*+]) \[[ xX]\]/g;
     const content = this.getContent();
     let match;
     let current = 0;
     
     while ((match = regex.exec(content)) !== null) {
       if (current === index) {
+        const bullet = match[1];
         const isChecked = match[0].includes('x') || match[0].includes('X');
-        const newStr = isChecked ? '- [ ]' : '- [x]';
+        const newStr = isChecked ? `${bullet} [ ]` : `${bullet} [x]`;
         
         // Dispatch transaction to update only the checkbox position
         this.view.dispatch({
