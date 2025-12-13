@@ -11,45 +11,45 @@
     - Create test directory structure at `src/renderer/__tests__/`
     - _Requirements: Testing Strategy_
 
-- [ ] 2. Implement core EditorManager with CodeMirror 6
-  - [ ] 2.1 Create new EditorManager class with CodeMirror initialization
+- [x] 2. Implement core EditorManager with CodeMirror 6
+  - [x] 2.1 Create new EditorManager class with CodeMirror initialization
     - Replace textarea with CodeMirror EditorView
     - Configure basic extensions: line numbers, history, bracket matching
     - Set up markdown language support with syntax highlighting
     - Implement constructor to accept container element instead of textarea
     - _Requirements: 1.1, 1.2, 2.1, 2.2, 2.3, 3.1_
-  - [ ] 2.2 Write property test for content round-trip
+  - [x] 2.2 Write property test for content round-trip
     - **Property 1: Content round-trip consistency**
     - **Validates: Requirements 5.1, 5.2, 5.3, 6.1, 6.2**
-  - [ ] 2.3 Implement getContent() and setContent() methods
+  - [x] 2.3 Implement getContent() and setContent() methods
     - `getContent()` returns `view.state.doc.toString()`
     - `setContent()` dispatches transaction to replace entire document
     - Track originalContent for change detection
     - _Requirements: 5.1, 5.2, 6.1, 6.2_
-  - [ ] 2.4 Write property test for undo behavior
+  - [x] 2.4 Write property test for undo behavior
     - **Property 2: Undo restores previous state**
     - **Validates: Requirements 2.1, 2.4**
-  - [ ] 2.5 Write property test for redo behavior
+  - [x] 2.5 Write property test for redo behavior
     - **Property 3: Redo restores undone state**
     - **Validates: Requirements 2.2**
-  - [ ] 2.6 Implement isContentChanged() and clear() methods
+  - [x] 2.6 Implement isContentChanged() and clear() methods
     - `isContentChanged()` compares current content to originalContent
     - `clear()` empties document and resets originalContent
     - _Requirements: 6.4, 6.5_
-  - [ ] 2.7 Write property test for content change detection
+  - [x] 2.7 Write property test for content change detection
     - **Property 4: Content change detection accuracy**
     - **Validates: Requirements 6.5**
-  - [ ] 2.8 Write property test for clear behavior
+  - [x] 2.8 Write property test for clear behavior
     - **Property 6: Clear resets state completely**
     - **Validates: Requirements 6.4**
-  - [ ] 2.9 Implement focus() method
+  - [x] 2.9 Implement focus() method
     - Call `view.focus()` to give keyboard focus
     - _Requirements: 6.3_
 
-- [ ] 3. Checkpoint - Ensure all tests pass
+- [x] 3. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 4. Implement preview mode and checkbox toggling
+- [-] 4. Implement preview mode and checkbox toggling
   - [ ] 4.1 Implement togglePreview() and updatePreview() methods
     - Toggle visibility between CodeMirror view and preview div
     - Update modeLabel text on toggle
