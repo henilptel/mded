@@ -111,8 +111,12 @@ function renderNotes(notes: NoteInfo[]) {
     onRename: async (id, folder) => {
       const note = notes.find(n => n.id === id);
       if (!note) return;
-      modalManager.showRenameModal('note', note.title, async (newName) => {
-        const result = await noteManager.renameNote(id, newName, folder);
+      // Use filename (without .md) instead of title (first line content)
+      const currentName = note.id.replace(/\.md$/i, '');
+      modalManager.showRenameModal('note', currentName, async (newName) => {
+        // Strip .md extension if user added it to avoid double extension
+        const cleanName = newName.replace(/\.md$/i, '');
+        const result = await noteManager.renameNote(id, cleanName, folder);
         if (result.success && result.noteId) {
           ui.showToast('Note renamed', 'success');
           // Update the tab if this note is open
