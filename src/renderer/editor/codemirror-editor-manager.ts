@@ -4,7 +4,27 @@ import { history, defaultKeymap, historyKeymap, undo, redo, insertNewlineAndInde
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { syntaxHighlighting, defaultHighlightStyle, bracketMatching } from '@codemirror/language';
 import { marked } from 'marked';
-import hljs from 'highlight.js';
+
+// Lazy-loaded highlight.js module
+type HLJSApi = typeof import('highlight.js').default;
+let hljsModule: HLJSApi | null = null;
+let hljsLoadPromise: Promise<HLJSApi> | null = null;
+
+/**
+ * Lazily load highlight.js only when needed (code-splitting)
+ * This reduces initial bundle size significantly (~500KB savings)
+ */
+async function loadHighlightJS(): Promise<HLJSApi> {
+  if (hljsModule) return hljsModule;
+  if (hljsLoadPromise) return hljsLoadPromise;
+  
+  hljsLoadPromise = import('highlight.js').then(mod => {
+    hljsModule = mod.default;
+    return hljsModule;
+  });
+  
+  return hljsLoadPromise;
+}
 
 /**
  * EditorManager class using CodeMirror 6
@@ -27,6 +47,14 @@ export class EditorManager {
   
   // Compartment for dynamic font size reconfiguration
   private fontSizeCompartment: Compartment;
+  
+  // Debounce timer for preview updates on large documents
+  private previewDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  
+  // Threshold for debouncing (characters)
+  private static readonly LARGE_DOC_THRESHOLD = 5000;
+  // Debounce delay for large documents (ms)
+  private static readonly DEBOUNCE_DELAY = 150;
 
   constructor(
     editorContainer: HTMLElement,
@@ -519,10 +547,35 @@ export class EditorManager {
 
   /**
    * Update the preview pane with rendered markdown
+   * Uses debouncing for large documents (>5000 chars) to improve performance
    */
   updatePreview(): void {
-    const markdownContent = this.getContent();
+    const content = this.getContent();
     
+    // For large documents, debounce the preview update
+    if (content.length > EditorManager.LARGE_DOC_THRESHOLD) {
+      if (this.previewDebounceTimer) {
+        clearTimeout(this.previewDebounceTimer);
+      }
+      this.previewDebounceTimer = setTimeout(() => {
+        this.renderPreview(content);
+        this.previewDebounceTimer = null;
+      }, EditorManager.DEBOUNCE_DELAY);
+    } else {
+      // Small documents - update immediately
+      if (this.previewDebounceTimer) {
+        clearTimeout(this.previewDebounceTimer);
+        this.previewDebounceTimer = null;
+      }
+      this.renderPreview(content);
+    }
+  }
+
+  /**
+   * Actually render the preview content
+   * Separated from updatePreview for debouncing support
+   */
+  private renderPreview(markdownContent: string): void {
     // Configure marked to use GFM (GitHub Flavored Markdown) with task lists
     let html = marked.parse(markdownContent, { gfm: true, breaks: true }) as string;
     
@@ -565,12 +618,28 @@ export class EditorManager {
       existingIndex++;
     });
     
-    // Apply syntax highlighting to code blocks
-    this.preview.querySelectorAll('pre code').forEach((block) => {
-      hljs.highlightElement(block as HTMLElement);
-    });
+    // Apply syntax highlighting to code blocks (lazy-loaded)
+    this.highlightCodeBlocks();
 
     this.updateStats();
+  }
+
+  /**
+   * Apply syntax highlighting to code blocks
+   * Lazily loads highlight.js only when code blocks are present
+   */
+  private async highlightCodeBlocks(): Promise<void> {
+    const codeBlocks = this.preview.querySelectorAll('pre code');
+    if (codeBlocks.length === 0) return;
+    
+    try {
+      const hljs = await loadHighlightJS();
+      codeBlocks.forEach((block) => {
+        hljs.highlightElement(block as HTMLElement);
+      });
+    } catch (err) {
+      console.warn('Failed to load highlight.js:', err);
+    }
   }
 
   updateStats(): void {
