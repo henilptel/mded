@@ -18,17 +18,15 @@ export function registerKeyboardShortcuts(
   ui: UIManager,
   callbacks: KeyboardShortcutCallbacks
 ) {
-  // Undo/Redo
+  // Undo/Redo - using editor's native history instead of deprecated document.execCommand
   shortcutManager.registerCtrl('z', (e) => {
     e.preventDefault();
-    document.execCommand('undo');
-    editorManager.updatePreview();
+    editorManager.undo();
   });
 
   shortcutManager.registerCtrl('y', (e) => {
     e.preventDefault();
-    document.execCommand('redo');
-    editorManager.updatePreview();
+    editorManager.redo();
   });
 
   // Save

@@ -120,6 +120,8 @@ export interface IEditorManager {
   isContentChanged(): boolean;
   clear(): void;
   focus(): void;
+  undo(): boolean;
+  redo(): boolean;
   togglePreview(): void;
   updatePreview(): void;
   updateStats(): void;
