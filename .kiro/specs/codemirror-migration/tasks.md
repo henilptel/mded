@@ -1,0 +1,145 @@
+# Implementation Plan
+
+- [x] 1. Set up CodeMirror 6 dependencies and test infrastructure
+  - [x] 1.1 Install CodeMirror 6 packages
+    - Add `codemirror`, `@codemirror/state`, `@codemirror/view`, `@codemirror/language`, `@codemirror/lang-markdown`, `@codemirror/commands` to package.json
+    - Run package manager to install dependencies
+    - _Requirements: 1.1, 1.2_
+  - [x] 1.2 Set up testing framework with fast-check
+    - Install `vitest`, `jsdom`, `fast-check` as dev dependencies
+    - Create vitest.config.ts with jsdom environment
+    - Create test directory structure at `src/renderer/__tests__/`
+    - _Requirements: Testing Strategy_
+
+- [ ] 2. Implement core EditorManager with CodeMirror 6
+  - [ ] 2.1 Create new EditorManager class with CodeMirror initialization
+    - Replace textarea with CodeMirror EditorView
+    - Configure basic extensions: line numbers, history, bracket matching
+    - Set up markdown language support with syntax highlighting
+    - Implement constructor to accept container element instead of textarea
+    - _Requirements: 1.1, 1.2, 2.1, 2.2, 2.3, 3.1_
+  - [ ] 2.2 Write property test for content round-trip
+    - **Property 1: Content round-trip consistency**
+    - **Validates: Requirements 5.1, 5.2, 5.3, 6.1, 6.2**
+  - [ ] 2.3 Implement getContent() and setContent() methods
+    - `getContent()` returns `view.state.doc.toString()`
+    - `setContent()` dispatches transaction to replace entire document
+    - Track originalContent for change detection
+    - _Requirements: 5.1, 5.2, 6.1, 6.2_
+  - [ ] 2.4 Write property test for undo behavior
+    - **Property 2: Undo restores previous state**
+    - **Validates: Requirements 2.1, 2.4**
+  - [ ] 2.5 Write property test for redo behavior
+    - **Property 3: Redo restores undone state**
+    - **Validates: Requirements 2.2**
+  - [ ] 2.6 Implement isContentChanged() and clear() methods
+    - `isContentChanged()` compares current content to originalContent
+    - `clear()` empties document and resets originalContent
+    - _Requirements: 6.4, 6.5_
+  - [ ] 2.7 Write property test for content change detection
+    - **Property 4: Content change detection accuracy**
+    - **Validates: Requirements 6.5**
+  - [ ] 2.8 Write property test for clear behavior
+    - **Property 6: Clear resets state completely**
+    - **Validates: Requirements 6.4**
+  - [ ] 2.9 Implement focus() method
+    - Call `view.focus()` to give keyboard focus
+    - _Requirements: 6.3_
+
+- [ ] 3. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 4. Implement preview mode and checkbox toggling
+  - [ ] 4.1 Implement togglePreview() and updatePreview() methods
+    - Toggle visibility between CodeMirror view and preview div
+    - Update modeLabel text on toggle
+    - Render markdown to HTML using marked library
+    - Apply syntax highlighting to code blocks with highlight.js
+    - _Requirements: 4.1_
+  - [ ] 4.2 Implement toggleCheckbox() method
+    - Find Nth checkbox pattern in document
+    - Toggle between `[ ]` and `[x]`
+    - Dispatch transaction to update only that position
+    - Trigger updatePreview() and onInput callback
+    - _Requirements: 4.2_
+  - [ ] 4.3 Write property test for checkbox toggle
+    - **Property 5: Checkbox toggle correctness**
+    - **Validates: Requirements 4.2**
+  - [ ] 4.4 Implement updateStats() method and onStatsUpdate callback
+    - Count `- [ ]` and `- [x]` patterns in document
+    - Invoke onStatsUpdate callback with (completed, total)
+    - _Requirements: 6.7_
+  - [ ] 4.5 Write property test for task statistics
+    - **Property 8: Task statistics accuracy**
+    - **Validates: Requirements 6.7**
+  - [ ] 4.6 Wire up onInput callback via update listener extension
+    - Create extension that listens for document changes
+    - Call onInput callback when document changes
+    - Call updatePreview() to sync preview
+    - _Requirements: 6.6_
+
+- [ ] 5. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 6. Implement markdown editing features
+  - [ ] 6.1 Implement insertMarkdown() method
+    - Get current selection from EditorView
+    - Check if selection is already wrapped with markers
+    - Toggle wrapping or insert new markers
+    - Update selection to highlight inserted content
+    - _Requirements: 4.8_
+  - [ ] 6.2 Implement insertLineMarkdown() method
+    - Find line boundaries from cursor position
+    - Toggle line prefix (headers, quotes, etc.)
+    - _Requirements: 4.8_
+  - [ ] 6.3 Implement duplicateLine() and deleteCurrentLine() methods
+    - Use CodeMirror transactions for undoable operations
+    - _Requirements: 4.8_
+  - [ ] 6.4 Implement list continuation on Enter key
+    - Create keymap extension for Enter handling
+    - Detect list item patterns (bullets, numbers, checkboxes)
+    - Continue list or exit on empty item
+    - _Requirements: 4.5_
+  - [ ] 6.5 Implement auto-pairing for brackets and quotes
+    - Create extension for character input handling
+    - Insert matching close character for `(`, `[`, `{`, `*`, `` ` ``, `"`, `'`
+    - Wrap selection if text is selected
+    - _Requirements: 4.6_
+
+- [ ] 7. Implement paste handling and font size
+  - [ ] 7.1 Implement image paste handling
+    - Create paste event handler extension
+    - Detect image data in clipboard
+    - Save image via electron API
+    - Insert markdown image reference
+    - _Requirements: 4.3_
+  - [ ] 7.2 Implement terminal output paste detection
+    - Detect terminal patterns in pasted text
+    - Wrap in code block with appropriate language
+    - _Requirements: 4.4_
+  - [ ] 7.3 Implement changeFontSize() method
+    - Update CodeMirror theme with new font size
+    - Update preview div font size
+    - Clamp to min/max bounds (10-32px)
+    - _Requirements: 4.7_
+
+- [ ] 8. Integrate with existing application
+  - [ ] 8.1 Update index.html to use div container instead of textarea
+    - Replace `<textarea id="editor">` with `<div id="editor-container">`
+    - Ensure container has appropriate styling
+    - _Requirements: 1.1_
+  - [ ] 8.2 Update app.ts to instantiate new EditorManager
+    - Pass container element to EditorManager constructor
+    - Verify all existing functionality works
+    - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7_
+  - [ ] 8.3 Update styles.css for CodeMirror integration
+    - Add CodeMirror container styles
+    - Ensure glassmorphism theme applies to editor
+    - Style line numbers gutter
+    - _Requirements: 1.3, 3.1_
+  - [ ] 8.4 Write property test for line numbers
+    - **Property 7: Line numbers match document lines**
+    - **Validates: Requirements 3.1, 3.2**
+
+- [ ] 9. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
