@@ -209,10 +209,13 @@ impl ShortcutManager {
         app: &AppHandle<R>,
         name: &str,
     ) -> Result<(), String> {
-        let shortcuts = self.registered_shortcuts.lock().unwrap();
+        let key_opt = {
+            let mut shortcuts = self.registered_shortcuts.lock().unwrap();
+            shortcuts.remove(name)
+        };
         
-        if let Some(key) = shortcuts.get(name) {
-            if let Ok(shortcut) = Self::parse_shortcut(key) {
+        if let Some(key) = key_opt {
+            if let Ok(shortcut) = Self::parse_shortcut(&key) {
                 let _ = app.global_shortcut().unregister(shortcut);
             }
         }
@@ -225,13 +228,15 @@ impl ShortcutManager {
     /// # Arguments
     /// * `app` - The Tauri application handle
     pub fn unregister_all<R: Runtime>(&self, app: &AppHandle<R>) {
-        let shortcuts = self.registered_shortcuts.lock().unwrap();
+        let mut shortcuts = self.registered_shortcuts.lock().unwrap();
         
         for key in shortcuts.values() {
             if let Ok(shortcut) = Self::parse_shortcut(key) {
                 let _ = app.global_shortcut().unregister(shortcut);
             }
         }
+        
+        shortcuts.clear();
     }
 
     /// Updates the toggle shortcut and re-registers it.
@@ -263,7 +268,9 @@ impl ShortcutManager {
         // Update config
         let config_manager = app.state::<ConfigManager>();
         config_manager.set_global_shortcut(new_key.to_string());
-        let _ = config_manager.save_sync();
+        if let Err(e) = config_manager.save_sync() {
+            log::warn!("Failed to persist shortcut configuration: {}", e);
+        }
         
         Ok(())
     }

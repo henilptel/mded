@@ -237,7 +237,7 @@ pub async fn set_window_opacity(
 ) -> Result<ApiResult, String> {
     let clamped = WindowManager::clamp_opacity(opacity);
     
-    config.set_window_opacity(clamped);
+    config.set_window_opacity(clamped)?;
     config.schedule_save().await;
     
     Ok(ApiResult {

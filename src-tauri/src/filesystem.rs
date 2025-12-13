@@ -48,8 +48,16 @@ pub fn validate_path(base_dir: &Path, relative_path: &str) -> Result<PathBuf, St
         full_path.canonicalize()
             .map_err(|e| format!("Failed to canonicalize path: {}", e))?
     } else {
-        // If the file doesn't exist, verify the parent directory is valid
-        // and return the constructed path
+        // For non-existing paths, canonicalize the parent to detect symlink escapes
+        if let Some(parent) = full_path.parent() {
+            if parent.exists() {
+                let canonical_parent = parent.canonicalize()
+                    .map_err(|e| format!("Failed to canonicalize parent: {}", e))?;
+                if !canonical_parent.starts_with(&canonical_base) {
+                    return Err("Path resolves outside of base directory".to_string());
+                }
+            }
+        }
         full_path.clone()
     };
 

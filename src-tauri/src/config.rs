@@ -5,6 +5,7 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 use tokio::time::sleep;
+use tokio::fs as tokio_fs;
 
 use crate::models::{Config, LastNote};
 
@@ -185,7 +186,9 @@ impl ConfigManager {
             // Perform the save
             let config = config_ref.read().unwrap().clone();
             if let Ok(content) = serde_json::to_string_pretty(&config) {
-                let _ = fs::write(path_ref.as_ref(), content);
+                if let Err(e) = tokio_fs::write(path_ref.as_ref(), content).await {
+                    log::error!("Failed to save config: {}", e);
+                }
             }
         });
         
@@ -291,10 +294,20 @@ impl ConfigManager {
     }
 
     /// Sets the window opacity.
-    pub fn set_window_opacity(&self, opacity: f64) {
+    ///
+    /// # Returns
+    /// * `Ok(())` - If the opacity is valid (0.3..=1.0)
+    /// * `Err(String)` - If the opacity is out of range
+    pub fn set_window_opacity(&self, opacity: f64) -> Result<(), String> {
+        if !(0.3..=1.0).contains(&opacity) {
+            return Err(format!("Opacity must be between 0.3 and 1.0, got {}", opacity));
+        }
+
         self.update(|config| {
             config.window_opacity = opacity;
         });
+        
+        Ok(())
     }
 
     /// Returns the config file path.
@@ -732,7 +745,7 @@ mod tests {
             
             // Create a config manager and set the opacity
             let manager = ConfigManager::new(config_path.clone()).unwrap();
-            manager.set_window_opacity(opacity);
+            manager.set_window_opacity(opacity).unwrap();
             
             // Verify the opacity is set correctly in memory
             let retrieved = manager.get_window_opacity();

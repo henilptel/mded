@@ -1,7 +1,7 @@
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Manager, Runtime,
+    AppHandle, Manager, Runtime, WebviewWindow,
 };
 
 /// Sets up the system tray with icon, tooltip, and context menu.
@@ -54,12 +54,18 @@ fn handle_tray_event<R: Runtime>(app: &AppHandle<R>, event: TrayIconEvent) {
         } => {
             // Toggle main window visibility on left click
             if let Some(window) = app.get_webview_window("main") {
-                if window.is_visible().unwrap_or(false) {
-                    let _ = window.hide();
-                } else {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                    let _ = window.unminimize();
+                match window.is_visible() {
+                    Ok(true) => {
+                         if let Err(e) = window.hide() {
+                             log::error!("Failed to hide window: {}", e);
+                         }
+                    }
+                    Ok(false) => {
+                        show_and_focus_window(&window);
+                    }
+                    Err(e) => {
+                        log::error!("Failed to check window visibility: {}", e);
+                    }
                 }
             }
         }
@@ -75,9 +81,7 @@ fn handle_menu_event<R: Runtime>(app: &AppHandle<R>, menu_id: &str) {
         "show" => {
             // Show and focus the main window
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.set_focus();
-                let _ = window.unminimize();
+                show_and_focus_window(&window);
             }
         }
         "quit" => {
@@ -85,5 +89,18 @@ fn handle_menu_event<R: Runtime>(app: &AppHandle<R>, menu_id: &str) {
             app.exit(0);
         }
         _ => {}
+    }
+}
+
+/// Helper function to show, focus and unminimize a window with error logging
+fn show_and_focus_window<R: Runtime>(window: &WebviewWindow<R>) {
+    if let Err(e) = window.show() {
+        log::error!("Failed to show window: {}", e);
+    }
+    if let Err(e) = window.set_focus() {
+        log::error!("Failed to focus window: {}", e);
+    }
+    if let Err(e) = window.unminimize() {
+        log::error!("Failed to unminimize window: {}", e);
     }
 }
