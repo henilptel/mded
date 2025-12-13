@@ -304,12 +304,19 @@ impl Default for ShortcutManager {
 /// Validates: Requirements 7.1
 fn toggle_window_visibility<R: Runtime>(app: &AppHandle<R>) {
     if let Some(window) = app.get_webview_window("main") {
-        if window.is_visible().unwrap_or(false) {
+        // Check visibility - default to false if we can't determine
+        let is_visible = window.is_visible().unwrap_or(false);
+        let is_minimized = window.is_minimized().unwrap_or(false);
+        
+        if is_visible && !is_minimized {
+            // Window is visible and not minimized - hide it
             let _ = window.hide();
         } else {
+            // Window is hidden or minimized - show it
+            // Order matters: show -> unminimize -> focus
             let _ = window.show();
-            let _ = window.set_focus();
             let _ = window.unminimize();
+            let _ = window.set_focus();
         }
     }
 }
