@@ -3,7 +3,7 @@ export class UIManager {
   public elements = {
     notesList: document.getElementById('notes-list') as HTMLDivElement,
     foldersList: document.getElementById('folders-list') as HTMLDivElement,
-    editor: document.getElementById('editor') as HTMLTextAreaElement,
+    editorContainer: document.getElementById('editor-container') as HTMLElement,
     preview: document.getElementById('preview') as HTMLDivElement,
     searchInput: document.getElementById('search-input') as HTMLInputElement,
     sortTrigger: document.getElementById('sort-trigger-btn') as HTMLButtonElement,

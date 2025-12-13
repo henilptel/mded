@@ -699,8 +699,139 @@ body {
   display: block;
 }
 
-.editor::placeholder {
+/* ============ CodeMirror Integration ============ */
+/* Container for CodeMirror editor */
+#editor-container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* CodeMirror editor wrapper */
+#editor-container .cm-editor {
+  height: 100%;
+  background: transparent;
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+}
+
+/* CodeMirror scroller */
+#editor-container .cm-scroller {
+  overflow: auto;
+  font-family: inherit;
+  line-height: 1.7;
+}
+
+/* CodeMirror content area */
+#editor-container .cm-content {
+  padding: 0;
+  caret-color: var(--text-primary);
+}
+
+/* CodeMirror line numbers gutter */
+#editor-container .cm-gutters {
+  background: transparent;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--text-quaternary);
+}
+
+#editor-container .cm-lineNumbers .cm-gutterElement {
+  padding: 0 12px 0 8px;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Active line gutter highlight */
+#editor-container .cm-activeLineGutter {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-tertiary);
+}
+
+/* Active line highlight */
+#editor-container .cm-activeLine {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Selection styling */
+#editor-container .cm-selectionBackground {
+  background: rgba(96, 165, 250, 0.25) !important;
+}
+
+#editor-container .cm-focused .cm-selectionBackground {
+  background: rgba(96, 165, 250, 0.35) !important;
+}
+
+/* Cursor styling */
+#editor-container .cm-cursor {
+  border-left-color: var(--text-primary);
+  border-left-width: 2px;
+}
+
+/* Placeholder text */
+#editor-container .cm-placeholder {
+  color: var(--text-quaternary);
+  font-style: italic;
+}
+
+/* Bracket matching */
+#editor-container .cm-matchingBracket {
+  background: rgba(96, 165, 250, 0.2);
+  outline: 1px solid rgba(96, 165, 250, 0.4);
+}
+
+/* Syntax highlighting for markdown */
+#editor-container .cm-header {
+  color: var(--accent-blue);
+  font-weight: 600;
+}
+
+#editor-container .cm-strong {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+#editor-container .cm-emphasis {
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+#editor-container .cm-strikethrough {
+  text-decoration: line-through;
+  color: var(--text-tertiary);
+}
+
+#editor-container .cm-link {
+  color: var(--accent-blue);
+  text-decoration: underline;
+}
+
+#editor-container .cm-url {
+  color: var(--text-tertiary);
+}
+
+#editor-container .cm-monospace {
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+#editor-container .cm-quote {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+#editor-container .cm-list {
+  color: var(--text-secondary);
+}
+
+/* Hide editor in preview mode */
+#editor-container.preview-mode {
+  display: none;
+}
+
+/* Focus outline for accessibility */
+#editor-container .cm-editor.cm-focused {
+  outline: none;
 }
 
 .preview {

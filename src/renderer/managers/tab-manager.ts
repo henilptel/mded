@@ -1,6 +1,5 @@
-import { EditorManager } from './editor-manager';
+import type { IEditorManager, SaveErrorDecision } from '../types';
 import { NoteManager } from './note-manager';
-import type { SaveErrorDecision } from '../types';
 
 export interface Tab {
   id: string;
@@ -13,14 +12,14 @@ export interface Tab {
 export class TabManager {
   private openTabs: Tab[] = [];
   private activeTabIndex = -1;
-  private editorManager: EditorManager;
+  private editorManager: IEditorManager;
   private noteManager: NoteManager;
 
   // Callbacks for external coordination
   public onTabChange?: () => void;
   public onShowSaveError?: (message: string) => Promise<SaveErrorDecision>;
 
-  constructor(editorManager: EditorManager, noteManager: NoteManager) {
+  constructor(editorManager: IEditorManager, noteManager: NoteManager) {
     this.editorManager = editorManager;
     this.noteManager = noteManager;
   }

@@ -102,3 +102,31 @@ export interface NoteManagerState {
 
 export type SaveErrorDecision = 'retry' | 'discard' | 'cancel';
 export type ModalType = 'note' | 'folder';
+
+// ============ Editor Interface ============
+
+/**
+ * Interface for EditorManager implementations
+ * Both the textarea-based and CodeMirror-based implementations satisfy this interface
+ */
+export interface IEditorManager {
+  isPreviewMode: boolean;
+  onInput: (() => void) | null;
+  onSave: (() => void) | null;
+  onStatsUpdate: ((completed: number, total: number) => void) | null;
+
+  getContent(): string;
+  setContent(content: string): void;
+  isContentChanged(): boolean;
+  clear(): void;
+  focus(): void;
+  togglePreview(): void;
+  updatePreview(): void;
+  updateStats(): void;
+  toggleCheckbox(index: number): void;
+  changeFontSize(delta: number): void;
+  insertMarkdown(before: string, after?: string): void;
+  insertLineMarkdown(prefix: string): void;
+  duplicateLine(): void;
+  deleteCurrentLine(): void;
+}

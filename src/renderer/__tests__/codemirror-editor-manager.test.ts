@@ -410,3 +410,57 @@ describe('EditorManager Property Tests', () => {
     );
   });
 });
+
+
+  /**
+   * **Feature: codemirror-migration, Property 7: Line numbers match document lines**
+   * *For any* document content, the number of line numbers displayed SHALL equal 
+   * the number of lines in the document.
+   * **Validates: Requirements 3.1, 3.2**
+   * 
+   * Note: This test verifies that the line numbers extension is configured and that
+   * the document line count is correctly tracked. In jsdom, CodeMirror's DOM rendering
+   * may differ from a real browser, so we verify the state-level line count which
+   * drives the line number display.
+   */
+  it('Property 7: Line numbers match document lines', () => {
+    fc.assert(
+      fc.property(
+        // Generate content with varying number of lines
+        fc.array(fc.string({ minLength: 0, maxLength: 50 }), { minLength: 1, maxLength: 20 }).map(lines => lines.join('\n')),
+        (docContent) => {
+          // Create a fresh editor for each test
+          const testContainer = document.createElement('div');
+          const testPreview = document.createElement('div') as HTMLDivElement;
+          const testModeLabel = document.createElement('span') as HTMLSpanElement;
+          document.body.appendChild(testContainer);
+          
+          const testEditor = new EditorManager(testContainer, testPreview, testModeLabel);
+          
+          try {
+            // Set content
+            testEditor.setContent(docContent);
+            
+            // Get the CodeMirror view
+            const view = (testEditor as any).view;
+            
+            // Count expected lines based on content
+            // An empty string has 1 line, each newline adds a line
+            const expectedLines = docContent === '' ? 1 : docContent.split('\n').length;
+            
+            // Verify CodeMirror's document line count matches expected
+            const actualLines = view.state.doc.lines;
+            
+            // Verify the line numbers extension is present by checking for gutter element
+            const hasLineNumbersGutter = testContainer.querySelector('.cm-lineNumbers') !== null;
+            
+            // The document line count should match expected, and line numbers should be enabled
+            return actualLines === expectedLines && hasLineNumbersGutter;
+          } finally {
+            document.body.removeChild(testContainer);
+          }
+        }
+      ),
+      { numRuns: 20 }
+    );
+  });

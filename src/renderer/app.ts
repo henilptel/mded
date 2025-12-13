@@ -4,7 +4,7 @@ import './api';
 import { NoteManager } from './managers/note-manager';
 import { UIManager } from './managers/ui-manager';
 import { ShortcutManager } from './managers/shortcut-manager';
-import { EditorManager } from './managers/editor-manager';
+import { EditorManager } from './editor/codemirror-editor-manager';
 import { TabManager } from './managers/tab-manager';
 import { ModalManager } from './managers/modal-manager';
 import { registerKeyboardShortcuts, registerRecentNotesShortcut } from './managers/keyboard-shortcuts';
@@ -14,7 +14,7 @@ import { NoteInfo } from './types';
 const ui = new UIManager();
 const noteManager = new NoteManager();
 const shortcutManager = new ShortcutManager();
-const editorManager = new EditorManager(ui.elements.editor, ui.elements.preview, ui.elements.modeLabel);
+const editorManager = new EditorManager(ui.elements.editorContainer, ui.elements.preview, ui.elements.modeLabel);
 const tabManager = new TabManager(editorManager, noteManager);
 const modalManager = new ModalManager(ui);
 
@@ -391,8 +391,8 @@ document.getElementById('toggle-preview')?.addEventListener('click', () => {
   editorManager.togglePreview();
 });
 
-document.getElementById('undo-btn')?.addEventListener('click', () => { document.execCommand('undo'); editorManager.updatePreview(); });
-document.getElementById('redo-btn')?.addEventListener('click', () => { document.execCommand('redo'); editorManager.updatePreview(); });
+document.getElementById('undo-btn')?.addEventListener('click', () => { editorManager.undo(); });
+document.getElementById('redo-btn')?.addEventListener('click', () => { editorManager.redo(); });
 
 // Shortcuts Modal
 const shortcutsModal = document.getElementById('shortcuts-modal');

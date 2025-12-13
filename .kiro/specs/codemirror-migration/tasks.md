@@ -81,7 +81,7 @@
 - [x] 5. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 6. Implement markdown editing features
+- [x] 6. Implement markdown editing features
   - [x] 6.1 Implement insertMarkdown() method
     - Get current selection from EditorView
     - Check if selection is already wrapped with markers
@@ -123,23 +123,23 @@
     - Clamp to min/max bounds (10-32px)
     - _Requirements: 4.7_
 
-- [-] 8. Integrate with existing application
-  - [ ] 8.1 Update index.html to use div container instead of textarea
+- [x] 8. Integrate with existing application
+  - [x] 8.1 Update index.html to use div container instead of textarea
     - Replace `<textarea id="editor">` with `<div id="editor-container">`
     - Ensure container has appropriate styling
     - _Requirements: 1.1_
-  - [ ] 8.2 Update app.ts to instantiate new EditorManager
+  - [x] 8.2 Update app.ts to instantiate new EditorManager
     - Pass container element to EditorManager constructor
     - Verify all existing functionality works
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7_
-  - [ ] 8.3 Update styles.css for CodeMirror integration
+  - [x] 8.3 Update styles.css for CodeMirror integration
     - Add CodeMirror container styles
     - Ensure glassmorphism theme applies to editor
     - Style line numbers gutter
     - _Requirements: 1.3, 3.1_
-  - [ ] 8.4 Write property test for line numbers
+  - [x] 8.4 Write property test for line numbers
     - **Property 7: Line numbers match document lines**
     - **Validates: Requirements 3.1, 3.2**
 
-- [ ] 9. Final Checkpoint - Ensure all tests pass
+- [x] 9. Final Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.

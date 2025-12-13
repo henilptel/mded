@@ -1,5 +1,5 @@
 import { ShortcutManager } from './shortcut-manager';
-import { EditorManager } from './editor-manager';
+import type { IEditorManager } from '../types';
 import { TabManager } from './tab-manager';
 import { UIManager } from './ui-manager';
 
@@ -13,7 +13,7 @@ export interface KeyboardShortcutCallbacks {
 
 export function registerKeyboardShortcuts(
   shortcutManager: ShortcutManager,
-  editorManager: EditorManager,
+  editorManager: IEditorManager,
   tabManager: TabManager,
   ui: UIManager,
   callbacks: KeyboardShortcutCallbacks
