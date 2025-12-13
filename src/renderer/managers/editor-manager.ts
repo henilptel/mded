@@ -65,19 +65,54 @@ export class EditorManager {
 
   updatePreview() {
     const markdown = this.editor.value;
-    const html = marked.parse(markdown);
+    // Configure marked to use GFM (GitHub Flavored Markdown) with task lists
+    let html = marked.parse(markdown, { gfm: true, breaks: true });
+    
+    // Manually convert task list items to interactive checkboxes
+    // Handle multiple possible formats from marked:
+    // 1. <li>[ ] or <li>[x] (direct)
+    // 2. <li><input ...> (if marked renders checkboxes)
+    // 3. <li><p>[ ] (with paragraph wrapper)
+    let checkboxIndex = 0;
+    
+    // Pattern 1: Direct checkbox syntax in li
+    html = html.replace(
+      /<li>(\s*)\[([ xX])\]/g, 
+      (_, space, checked) => {
+        const isChecked = checked.toLowerCase() === 'x';
+        const checkbox = `<li class="task-list-item">${space}<input type="checkbox" data-checkbox-index="${checkboxIndex}" ${isChecked ? 'checked' : ''}> `;
+        checkboxIndex++;
+        return checkbox;
+      }
+    );
+    
+    // Pattern 2: Checkbox syntax inside paragraph in li
+    html = html.replace(
+      /<li><p>\[([ xX])\]/g, 
+      (_, checked) => {
+        const isChecked = checked.toLowerCase() === 'x';
+        const checkbox = `<li class="task-list-item"><p><input type="checkbox" data-checkbox-index="${checkboxIndex}" ${isChecked ? 'checked' : ''}> `;
+        checkboxIndex++;
+        return checkbox;
+      }
+    );
+    
+    // Pattern 3: If marked already rendered input elements, ensure they have our data attribute
+    // and are not disabled
     this.preview.innerHTML = html;
+    
+    // Post-process: find any existing checkboxes and add data attributes
+    let existingIndex = checkboxIndex;
+    this.preview.querySelectorAll('input[type="checkbox"]:not([data-checkbox-index])').forEach((cb) => {
+      (cb as HTMLInputElement).dataset.checkboxIndex = String(existingIndex);
+      (cb as HTMLInputElement).removeAttribute('disabled');
+      existingIndex++;
+    });
     
     this.preview.querySelectorAll('pre code').forEach((block) => {
       if (typeof hljs !== 'undefined') {
         hljs.highlightElement(block as HTMLElement);
       }
-    });
-
-    // Interactive Checkboxes
-    // Interactive Checkboxes: Enable them so they can capture clicks (handled via delegation)
-    this.preview.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
-        checkbox.removeAttribute('disabled');
     });
 
     this.updateStats();
@@ -101,9 +136,11 @@ export class EditorManager {
               const isChecked = match[0].includes('x') || match[0].includes('X');
               const newStr = isChecked ? '- [ ]' : '- [x]';
               
-              this.editor.focus();
-              this.editor.setSelectionRange(match.index, match.index + match[0].length);
-              document.execCommand('insertText', false, newStr);
+              // Directly modify the editor value instead of using execCommand
+              // This works even when the editor is hidden (in preview mode)
+              const before = content.substring(0, match.index);
+              const after = content.substring(match.index + match[0].length);
+              this.editor.value = before + newStr + after;
               
               this.updatePreview();
               this.onInput?.();
@@ -122,16 +159,35 @@ export class EditorManager {
   insertMarkdown(before: string, after: string = '') {
     const start = this.editor.selectionStart;
     const end = this.editor.selectionEnd;
-    const selectedText = this.editor.value.substring(start, end);
-    const newText = before + selectedText + after;
+    const content = this.editor.value;
+    const selectedText = content.substring(start, end);
     
     this.editor.focus();
-    this.editor.setSelectionRange(start, end);
-    document.execCommand('insertText', false, newText);
     
-    // Position cursor inside the inserted text
-    this.editor.selectionStart = start + before.length;
-    this.editor.selectionEnd = start + before.length + selectedText.length;
+    // Check if we should toggle off (text is already wrapped with before/after)
+    const beforeLen = before.length;
+    const afterLen = after.length;
+    
+    // Check if selection is already wrapped
+    const textBefore = content.substring(Math.max(0, start - beforeLen), start);
+    const textAfter = content.substring(end, end + afterLen);
+    
+    if (textBefore === before && textAfter === after) {
+      // Remove the wrapping - select including the markers
+      this.editor.setSelectionRange(start - beforeLen, end + afterLen);
+      document.execCommand('insertText', false, selectedText);
+      // Position cursor to select the unwrapped text
+      this.editor.selectionStart = start - beforeLen;
+      this.editor.selectionEnd = start - beforeLen + selectedText.length;
+    } else {
+      // Add the wrapping
+      const newText = before + selectedText + after;
+      this.editor.setSelectionRange(start, end);
+      document.execCommand('insertText', false, newText);
+      // Position cursor inside the inserted text
+      this.editor.selectionStart = start + beforeLen;
+      this.editor.selectionEnd = start + beforeLen + selectedText.length;
+    }
     
     this.updatePreview();
     this.onInput?.();
@@ -221,11 +277,26 @@ export class EditorManager {
     // Delegated click listener for checkboxes
     this.preview.addEventListener('click', (e) => {
         const target = e.target as HTMLElement;
+        
+        // Check if clicked element is a checkbox
         if (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'checkbox') {
             e.preventDefault();
-            const checkboxes = this.preview.querySelectorAll('input[type="checkbox"]');
-            const index = Array.from(checkboxes).indexOf(target as HTMLInputElement);
-            if (index !== -1) {
+            e.stopPropagation();
+            
+            const checkbox = target as HTMLInputElement;
+            
+            // Use data attribute if available, otherwise fall back to index search
+            const indexAttr = checkbox.dataset.checkboxIndex;
+            let index = -1;
+            
+            if (indexAttr !== undefined && indexAttr !== '') {
+                index = parseInt(indexAttr, 10);
+            } else {
+                const checkboxes = this.preview.querySelectorAll('input[type="checkbox"]');
+                index = Array.from(checkboxes).indexOf(checkbox);
+            }
+            
+            if (index >= 0 && !isNaN(index)) {
                 this.toggleCheckbox(index);
             }
         }
@@ -257,7 +328,7 @@ export class EditorManager {
       const match = lineContent.match(/^(\s*)(- \[\s*[xX]?\s*\]\s*|[0-9]+\.\s*|[-*]\s*)(.*)/);
 
       if (match) {
-          const [full, leadingSpaces, marker, rest] = match;
+          const [, leadingSpaces = '', marker = '', rest = ''] = match;
           
           if (!rest.trim()) {
               // Empty list item -> Exit list
@@ -271,16 +342,16 @@ export class EditorManager {
               
               // Determine next marker
               let nextMarker = marker;
-              if (marker.match(/^[0-9]+\./)) {
+              if (/^[0-9]+\./.test(marker)) {
                    // Increment number (e.g. "1. " -> "2. ")
-                   const num = parseInt(marker);
+                   const num = parseInt(marker, 10);
                    if (!isNaN(num)) {
                        nextMarker = `${num + 1}. `;
                    }
               } else if (marker.includes('[') && marker.includes(']')) {
                   // Always use unchecked box for new item
                   nextMarker = '- [ ] ';
-              } // else it's "- " or "* " - keep as is (but clean up spacing if needed? let's keep exact string to be safe)
+              } // else it's "- " or "* " - keep as is
 
               document.execCommand('insertText', false, '\n' + leadingSpaces + nextMarker);
           }
@@ -329,6 +400,7 @@ export class EditorManager {
       const items = clipboardData.items;
       for (let i = 0; i < items.length; i++) {
           const item = items[i];
+          if (!item) continue;
           
           if (item.type.startsWith('image/')) {
               e.preventDefault();
@@ -343,7 +415,7 @@ export class EditorManager {
               reader.onload = async () => {
                   try {
                       const base64Data = reader.result as string;
-                      const result = await (window as any).electron.saveScreenshot(base64Data);
+                      const result = await window.electron.saveScreenshot(base64Data);
                       
                       if (result.success && result.imagePath) {
                           const markdownImg = `![screenshot](${result.imagePath})\n`;
@@ -418,7 +490,7 @@ export class EditorManager {
       const cleanText = text.replace(/\x1b\[[0-9;]*m/g, '');
       
       const lines = cleanText.split('\n');
-      const firstLine = lines[0].trim();
+      const firstLine = (lines[0] ?? '').trim();
       
       const promptPatterns = [
           /^\$\s+(.+)$/,
@@ -431,7 +503,7 @@ export class EditorManager {
       let command = '';
       for (const pattern of promptPatterns) {
           const match = firstLine.match(pattern);
-          if (match) {
+          if (match && match[1]) {
               command = match[1];
               break;
           }

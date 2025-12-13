@@ -165,12 +165,7 @@ export class UIManager {
     });
   }
 
-  renderFolders(folders: import('../types').FolderInfo[], currentFolder: string, callbacks: {
-    onSelect: (path: string) => void,
-    onRename: (name: string) => void,
-    onDelete: (name: string) => void,
-    onDrop: (sourceId: string, sourceFolder: string, targetFolder: string) => void
-  }) {
+  renderFolders(folders: import('../types').FolderInfo[], currentFolder: string, callbacks: import('../types').FolderCallbacks): void {
     this.elements.foldersList.innerHTML = '';
     
     folders.forEach(folder => {
@@ -248,14 +243,11 @@ export class UIManager {
     });
   }
 
-  renderNotes(notes: import('../types').NoteInfo[], state: { id: string|null, folder: string, searchQuery: string }, callbacks: {
-      onSelect: (id: string, folder: string) => void,
-      onRename: (id: string, folder: string) => void,
-      onDelete: (id: string, folder: string) => void,
-      onDragStart: (id: string, folder: string) => void,
-      onDrop: (targetId: string, targetFolder: string) => void,
-      onPin: (id: string, folder: string) => void
-  }) {
+  renderNotes(
+    notes: import('../types').NoteInfo[], 
+    state: import('../types').NoteRenderState, 
+    callbacks: import('../types').NoteCallbacks
+  ): void {
     this.elements.notesList.innerHTML = '';
 
     if (notes.length === 0) {
@@ -281,18 +273,29 @@ export class UIManager {
       const content = document.createElement('div');
       content.className = 'note-content';
       
-      // highlighting logic (if supported)
-      let titleHtml = this.escapeHtml(note.title);
+      // Use filename (without .md) as the main title
+      const filename = note.id.replace(/\.md$/i, '');
+      let filenameHtml = this.escapeHtml(filename);
+      
+      // Use first line content as preview (note.title from backend)
+      const preview = note.title !== filename ? note.title : '';
+      let previewHtml = preview ? this.escapeHtml(preview) : '';
+      
+      // Apply search highlighting
       if (state.searchQuery) {
           const re = new RegExp(`(${state.searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-          titleHtml = titleHtml.replace(re, '<span class="search-highlight">$1</span>');
+          filenameHtml = filenameHtml.replace(re, '<span class="search-highlight">$1</span>');
+          if (previewHtml) {
+              previewHtml = previewHtml.replace(re, '<span class="search-highlight">$1</span>');
+          }
       }
       
       // Pin Icon if pinned
       const pinIcon = note.pinned ? `<span class="pin-indicator"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M16 4v12l-4 4-4-4V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2z"></path></svg></span>` : '';
 
       content.innerHTML = `
-          <h3>${titleHtml} ${pinIcon}</h3>
+          <h3>${filenameHtml} ${pinIcon}</h3>
+          ${previewHtml ? `<p class="note-preview">${previewHtml}</p>` : ''}
           <div class="note-meta">
             <span class="note-date">${dateStr}</span>
             ${note.folder ? `<span class="note-folder">${note.folder}</span>` : ''}

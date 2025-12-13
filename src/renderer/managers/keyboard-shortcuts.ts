@@ -144,13 +144,15 @@ export function registerRecentNotesShortcut(
   shortcutManager: ShortcutManager,
   getRecentNotes: () => { id: string; folder: string }[],
   loadNote: (id: string, folder: string) => void
-) {
+): void {
   shortcutManager.registerCtrl('Tab', (e) => {
     e.preventDefault();
     const recentNotes = getRecentNotes();
     if (recentNotes.length > 1) {
       const target = recentNotes[recentNotes.length - 2];
-      loadNote(target.id, target.folder);
+      if (target) {
+        loadNote(target.id, target.folder);
+      }
     }
   });
 }

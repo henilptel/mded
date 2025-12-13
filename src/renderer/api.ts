@@ -9,13 +9,8 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
-// Types matching the Rust backend
-export interface FolderInfo {
-  name: string;
-  path: string;
-}
-
-export interface NoteInfo {
+// Types matching the Rust backend (snake_case from Rust)
+interface RustNoteInfo {
   id: string;
   title: string;
   modified: string; // ISO date string from Rust
@@ -24,19 +19,34 @@ export interface NoteInfo {
   pinned: boolean;
 }
 
-export interface ApiResult {
+// Note: Rust uses #[serde(rename_all = "camelCase")] so fields come as camelCase
+interface RustApiResult {
   success: boolean;
   error?: string;
   content?: string;
-  note_id?: string;
+  noteId?: string;
   folder?: string;
-  image_path?: string;
-  image_id?: string;
-  file_name?: string;
-  file_path?: string;
+  imagePath?: string;
+  imageId?: string;
+  fileName?: string;
+  filePath?: string;
   pinned?: boolean;
   opacity?: number;
 }
+
+// Re-export types for external use
+export type { FolderInfo, NoteInfo, ApiResult } from './types';
+
+import type { 
+  FolderInfo, 
+  NoteInfo, 
+  ApiResult, 
+  NoteOperationResult,
+  PinResult,
+  ScreenshotResult,
+  ExternalFileResult,
+  OpacityResult
+} from './types';
 
 export interface DisplayInfo {
   x: number;
@@ -50,13 +60,69 @@ export interface LastNote {
   folder: string | null;
 }
 
-// Convert ISO date strings to Date objects for NoteInfo
-function convertNoteInfo(note: NoteInfo): NoteInfo & { modified: Date; created: Date } {
+// Convert Rust snake_case response to camelCase NoteInfo with Date objects
+function convertNoteInfo(note: RustNoteInfo): NoteInfo {
   return {
-    ...note,
+    id: note.id,
+    title: note.title,
     modified: new Date(note.modified),
     created: new Date(note.created),
-  } as NoteInfo & { modified: Date; created: Date };
+    folder: note.folder,
+    pinned: note.pinned,
+  };
+}
+
+// Convert Rust API result to typed result
+function convertApiResult(result: RustApiResult): ApiResult & { content?: string } {
+  return {
+    success: result.success,
+    error: result.error,
+    content: result.content,
+  };
+}
+
+function convertNoteOperationResult(result: RustApiResult): NoteOperationResult {
+  return {
+    success: result.success,
+    error: result.error,
+    noteId: result.noteId,
+    folder: result.folder,
+  };
+}
+
+function convertPinResult(result: RustApiResult): PinResult {
+  return {
+    success: result.success,
+    error: result.error,
+    pinned: result.pinned,
+  };
+}
+
+function convertScreenshotResult(result: RustApiResult): ScreenshotResult {
+  return {
+    success: result.success,
+    error: result.error,
+    imagePath: result.imagePath,
+    imageId: result.imageId,
+  };
+}
+
+function convertExternalFileResult(result: RustApiResult): ExternalFileResult {
+  return {
+    success: result.success,
+    error: result.error,
+    content: result.content,
+    fileName: result.fileName,
+    filePath: result.filePath,
+  };
+}
+
+function convertOpacityResult(result: RustApiResult): OpacityResult {
+  return {
+    success: result.success,
+    error: result.error,
+    opacity: result.opacity,
+  };
 }
 
 
@@ -68,48 +134,70 @@ export const tauriAPI = {
   listFolders: (): Promise<FolderInfo[]> => 
     invoke<FolderInfo[]>('list_folders'),
   
-  createFolder: (name: string): Promise<ApiResult> => 
-    invoke<ApiResult>('create_folder', { name }),
+  createFolder: async (name: string): Promise<ApiResult> => {
+    const result = await invoke<RustApiResult>('create_folder', { name });
+    return { success: result.success, error: result.error };
+  },
   
-  deleteFolder: (name: string): Promise<ApiResult> => 
-    invoke<ApiResult>('delete_folder', { name }),
+  deleteFolder: async (name: string): Promise<ApiResult> => {
+    const result = await invoke<RustApiResult>('delete_folder', { name });
+    return { success: result.success, error: result.error };
+  },
   
-  renameFolder: (oldName: string, newName: string): Promise<ApiResult> => 
-    invoke<ApiResult>('rename_folder', { oldName, newName }),
+  renameFolder: async (oldName: string, newName: string): Promise<ApiResult> => {
+    const result = await invoke<RustApiResult>('rename_folder', { oldName, newName });
+    return { success: result.success, error: result.error };
+  },
 
   // ============ Note Operations ============
-  listNotes: async (folder?: string): Promise<(NoteInfo & { modified: Date; created: Date })[]> => {
-    const notes = await invoke<NoteInfo[]>('list_notes', { folder: folder ?? null });
+  listNotes: async (folder?: string): Promise<NoteInfo[]> => {
+    const notes = await invoke<RustNoteInfo[]>('list_notes', { folder: folder ?? null });
     return notes.map(convertNoteInfo);
   },
   
-  readNote: (noteId: string, folder?: string): Promise<ApiResult> => 
-    invoke<ApiResult>('read_note', { noteId, folder: folder ?? null }),
+  readNote: async (noteId: string, folder?: string): Promise<ApiResult & { content?: string }> => {
+    const result = await invoke<RustApiResult>('read_note', { noteId, folder: folder ?? null });
+    return convertApiResult(result);
+  },
   
-  saveNote: (noteId: string, content: string, folder?: string): Promise<ApiResult> => 
-    invoke<ApiResult>('save_note', { noteId, content, folder: folder ?? null }),
+  saveNote: async (noteId: string, content: string, folder?: string): Promise<ApiResult> => {
+    const result = await invoke<RustApiResult>('save_note', { noteId, content, folder: folder ?? null });
+    return { success: result.success, error: result.error };
+  },
   
-  createNote: (folder?: string): Promise<ApiResult> => 
-    invoke<ApiResult>('create_note', { folder: folder ?? null }),
+  createNote: async (folder?: string): Promise<NoteOperationResult> => {
+    const result = await invoke<RustApiResult>('create_note', { folder: folder ?? null });
+    return convertNoteOperationResult(result);
+  },
   
-  deleteNote: (noteId: string, folder?: string): Promise<ApiResult> => 
-    invoke<ApiResult>('delete_note', { noteId, folder: folder ?? null }),
+  deleteNote: async (noteId: string, folder?: string): Promise<ApiResult> => {
+    const result = await invoke<RustApiResult>('delete_note', { noteId, folder: folder ?? null });
+    return { success: result.success, error: result.error };
+  },
   
-  renameNote: (noteId: string, newName: string, folder?: string): Promise<ApiResult> => 
-    invoke<ApiResult>('rename_note', { noteId, newName, folder: folder ?? null }),
+  renameNote: async (noteId: string, newName: string, folder?: string): Promise<NoteOperationResult> => {
+    const result = await invoke<RustApiResult>('rename_note', { noteId, newName, folder: folder ?? null });
+    return convertNoteOperationResult(result);
+  },
   
-  moveNoteToFolder: (noteId: string, currentFolder: string, targetFolder: string): Promise<ApiResult> => 
-    invoke<ApiResult>('move_note', { noteId, fromFolder: currentFolder, toFolder: targetFolder }),
+  moveNoteToFolder: async (noteId: string, currentFolder: string, targetFolder: string): Promise<ApiResult> => {
+    const result = await invoke<RustApiResult>('move_note', { noteId, fromFolder: currentFolder, toFolder: targetFolder });
+    return { success: result.success, error: result.error };
+  },
 
   // ============ Note Pinning & Order ============
-  togglePinNote: (noteId: string): Promise<ApiResult> => 
-    invoke<ApiResult>('toggle_pin_note', { noteId }),
+  togglePinNote: async (noteId: string): Promise<PinResult> => {
+    const result = await invoke<RustApiResult>('toggle_pin_note', { noteId });
+    return convertPinResult(result);
+  },
   
   getNoteOrder: (): Promise<Record<string, string[]>> => 
     invoke<Record<string, string[]>>('get_note_order'),
   
-  saveNoteOrder: (order: Record<string, string[]>): Promise<ApiResult> => 
-    invoke<ApiResult>('save_note_order', { order }),
+  saveNoteOrder: async (order: Record<string, string[]>): Promise<ApiResult> => {
+    const result = await invoke<RustApiResult>('save_note_order', { order });
+    return { success: result.success, error: result.error };
+  },
 
   // ============ Window Controls ============
   minimizeWindow: (): Promise<void> => 
@@ -131,47 +219,63 @@ export const tauriAPI = {
     invoke<ApiResult>('set_always_on_top', { flag }),
 
   // ============ Minimal Mode ============
-  enterMinimalMode: (): Promise<ApiResult> => 
-    invoke<ApiResult>('enter_minimal_mode'),
+  enterMinimalMode: async (): Promise<ApiResult> => {
+    const result = await invoke<RustApiResult>('enter_minimal_mode');
+    return { success: result.success, error: result.error };
+  },
   
-  exitMinimalMode: (): Promise<ApiResult> => 
-    invoke<ApiResult>('exit_minimal_mode'),
+  exitMinimalMode: async (): Promise<ApiResult> => {
+    const result = await invoke<RustApiResult>('exit_minimal_mode');
+    return { success: result.success, error: result.error };
+  },
   
-  saveMinimalBounds: (): Promise<ApiResult> => 
-    invoke<ApiResult>('save_minimal_bounds'),
+  saveMinimalBounds: async (): Promise<ApiResult> => {
+    const result = await invoke<RustApiResult>('save_minimal_bounds');
+    return { success: result.success, error: result.error };
+  },
 
   // ============ Display & Opacity ============
   getWindowOpacity: (): Promise<number> => 
     invoke<number>('get_window_opacity'),
   
-  setWindowOpacity: (opacity: number): Promise<ApiResult & { opacity?: number }> => 
-    invoke<ApiResult & { opacity?: number }>('set_window_opacity', { opacity }),
+  setWindowOpacity: async (opacity: number): Promise<OpacityResult> => {
+    const result = await invoke<RustApiResult>('set_window_opacity', { opacity });
+    return convertOpacityResult(result);
+  },
   
   getDisplayInfo: (): Promise<DisplayInfo> => 
     invoke<DisplayInfo>('get_display_info'),
 
   // ============ System Integration ============
-  saveScreenshot: (base64Data: string): Promise<ApiResult & { imagePath?: string; imageId?: string }> => 
-    invoke<ApiResult & { imagePath?: string; imageId?: string }>('save_screenshot', { base64Data }),
+  saveScreenshot: async (base64Data: string): Promise<ScreenshotResult> => {
+    const result = await invoke<RustApiResult>('save_screenshot', { base64Data });
+    return convertScreenshotResult(result);
+  },
   
   getAssetsPath: (): Promise<string> => 
     invoke<string>('get_assets_path'),
   
-  readExternalFile: (filePath: string): Promise<ApiResult & { content?: string; fileName?: string; filePath?: string }> => 
-    invoke<ApiResult & { content?: string; fileName?: string; filePath?: string }>('read_external_file', { filePath }),
+  readExternalFile: async (filePath: string): Promise<ExternalFileResult> => {
+    const result = await invoke<RustApiResult>('read_external_file', { filePath });
+    return convertExternalFileResult(result);
+  },
   
   getAutoStart: (): Promise<boolean> => 
     invoke<boolean>('get_auto_start'),
   
-  setAutoStart: (enabled: boolean): Promise<ApiResult> => 
-    invoke<ApiResult>('set_auto_start', { enabled }),
+  setAutoStart: async (enabled: boolean): Promise<ApiResult> => {
+    const result = await invoke<RustApiResult>('set_auto_start', { enabled });
+    return { success: result.success, error: result.error };
+  },
 
   // ============ Config & Shortcuts ============
   getGlobalShortcut: (): Promise<string> => 
     invoke<string>('get_global_shortcut'),
   
-  setGlobalShortcut: (key: string): Promise<ApiResult> => 
-    invoke<ApiResult>('set_global_shortcut', { key }),
+  setGlobalShortcut: async (key: string): Promise<ApiResult> => {
+    const result = await invoke<RustApiResult>('set_global_shortcut', { key });
+    return { success: result.success, error: result.error };
+  },
   
   getLastNote: async (): Promise<{ noteId: string | null; folder: string | null }> => {
     const result = await invoke<LastNote>('get_last_note');
@@ -181,11 +285,15 @@ export const tauriAPI = {
     };
   },
   
-  saveLastNote: (noteId: string | null, folder: string | null): Promise<ApiResult> => 
-    invoke<ApiResult>('save_last_note', { noteId, folder }),
+  saveLastNote: async (noteId: string | null, folder: string | null): Promise<ApiResult> => {
+    const result = await invoke<RustApiResult>('save_last_note', { noteId, folder });
+    return { success: result.success, error: result.error };
+  },
   
-  saveQuickNote: (content: string): Promise<ApiResult> => 
-    invoke<ApiResult>('save_quick_note', { content }),
+  saveQuickNote: async (content: string): Promise<ApiResult> => {
+    const result = await invoke<RustApiResult>('save_quick_note', { content });
+    return { success: result.success, error: result.error };
+  },
 
   // ============ Events ============
   onRefreshNotes: (callback: (noteId?: string) => void): Promise<UnlistenFn> => 

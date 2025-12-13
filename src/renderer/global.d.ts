@@ -11,6 +11,8 @@ declare global {
     electron: TauriAPI;
   }
   
-  const marked: { parse: (markdown: string) => string };
+  const marked: { 
+    parse: (markdown: string, options?: { gfm?: boolean; breaks?: boolean }) => string;
+  };
   const hljs: { highlightElement: (element: HTMLElement) => void } | undefined;
 }

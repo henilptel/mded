@@ -15,7 +15,7 @@ const ui = new UIManager();
 const noteManager = new NoteManager();
 const shortcutManager = new ShortcutManager();
 const editorManager = new EditorManager(ui.elements.editor, ui.elements.preview, ui.elements.modeLabel);
-const tabManager = new TabManager(editorManager, noteManager, ui);
+const tabManager = new TabManager(editorManager, noteManager);
 const modalManager = new ModalManager(ui);
 
 // State
@@ -50,10 +50,13 @@ async function refreshFolders() {
         const result = await noteManager.renameFolder(currentName, newName);
         if (result.success) {
           ui.showToast('Folder renamed', 'success');
+          // Update all open tabs that were in this folder
+          tabManager.updateTabsFolder(currentName, newName);
           if (noteManager.currentState.currentFolder === currentName) {
             noteManager.setCurrentFolder(newName);
           }
-          refreshFolders();
+          await refreshFolders();
+          await refreshNotes();
         } else {
           ui.showToast(`Failed: ${result.error}`, 'error');
         }
@@ -64,11 +67,13 @@ async function refreshFolders() {
         const result = await noteManager.deleteFolder(name);
         if (result.success) {
           ui.showToast('Folder deleted', 'success');
+          // Close all tabs that were in this folder
+          tabManager.closeTabsInFolder(name);
           if (noteManager.currentState.currentFolder === name) {
             noteManager.setCurrentFolder('');
           }
-          refreshFolders();
-          refreshNotes();
+          await refreshFolders();
+          await refreshNotes();
         } else {
           ui.showToast(`Failed: ${result.error}`, 'error');
         }
@@ -101,13 +106,12 @@ function renderNotes(notes: NoteInfo[]) {
       if (!note) return;
       modalManager.showRenameModal('note', note.title, async (newName) => {
         const result = await noteManager.renameNote(id, newName, folder);
-        if (result.success) {
+        if (result.success && result.noteId) {
           ui.showToast('Note renamed', 'success');
-          if (currentTab?.id === id) {
-            noteManager.setCurrentNote(result.noteId || newName, folder);
-          }
-          refreshNotes();
-          if (result.noteId) loadNote(result.noteId, folder);
+          // Update the tab if this note is open
+          tabManager.updateTabNoteId(id, folder, result.noteId, newName);
+          noteManager.setCurrentNote(result.noteId, folder);
+          await refreshNotes();
         } else {
           ui.showToast(`Failed: ${result.error}`, 'error');
         }
@@ -138,9 +142,11 @@ function renderNotes(notes: NoteInfo[]) {
   });
 
   if (focusedNoteIndex >= 0 && focusedNoteIndex < notes.length) {
-    const noteId = notes[focusedNoteIndex].id;
-    const noteEl = document.querySelector(`.note-item[data-note-id="${noteId}"]`) as HTMLElement;
-    if (noteEl) noteEl.classList.add('focused');
+    const focusedNote = notes[focusedNoteIndex];
+    if (focusedNote) {
+      const noteEl = document.querySelector(`.note-item[data-note-id="${focusedNote.id}"]`) as HTMLElement;
+      if (noteEl) noteEl.classList.add('focused');
+    }
   }
 }
 
@@ -169,10 +175,12 @@ document.addEventListener('keydown', (e) => {
     updateSidebarFocus();
   } else if (e.key === 'Enter') {
     if (focusedNoteIndex >= 0 && focusedNoteIndex < currentDisplayedNotes.length) {
-      e.preventDefault();
       const note = currentDisplayedNotes[focusedNoteIndex];
-      loadNote(note.id, note.folder);
-      editorManager.focus();
+      if (note) {
+        e.preventDefault();
+        loadNote(note.id, note.folder);
+        editorManager.focus();
+      }
     }
   }
 });
@@ -182,10 +190,12 @@ function updateSidebarFocus() {
 
   if (focusedNoteIndex >= 0 && focusedNoteIndex < currentDisplayedNotes.length) {
     const note = currentDisplayedNotes[focusedNoteIndex];
-    const noteEl = document.querySelector(`.note-item[data-note-id="${note.id}"]`) as HTMLElement;
-    if (noteEl) {
-      noteEl.classList.add('focused');
-      noteEl.scrollIntoView({ block: 'nearest' });
+    if (note) {
+      const noteEl = document.querySelector(`.note-item[data-note-id="${note.id}"]`) as HTMLElement;
+      if (noteEl) {
+        noteEl.classList.add('focused');
+        noteEl.scrollIntoView({ block: 'nearest' });
+      }
     }
   }
 }
@@ -310,8 +320,8 @@ document.getElementById('new-note-btn')?.addEventListener('click', async () => {
   const result = await noteManager.createNote();
   if (result.success && result.noteId) {
     ui.showToast('Note created', 'success');
-    refreshNotes();
-    loadNote(result.noteId, result.folder || '');
+    await refreshNotes();
+    await loadNote(result.noteId, result.folder || '');
   }
 });
 
@@ -517,8 +527,8 @@ ui.elements.commandPaletteInput.addEventListener('keydown', (e) => {
     renderCommandPaletteResults(filteredPaletteNotes);
   } else if (e.key === 'Enter') {
     e.preventDefault();
-    if (filteredPaletteNotes[commandPaletteSelectedIndex]) {
-      const note = filteredPaletteNotes[commandPaletteSelectedIndex];
+    const note = filteredPaletteNotes[commandPaletteSelectedIndex];
+    if (note) {
       loadNote(note.id, note.folder);
       closeCommandPalette();
     }

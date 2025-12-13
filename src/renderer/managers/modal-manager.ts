@@ -1,4 +1,5 @@
 import { UIManager } from './ui-manager';
+import type { SaveErrorDecision, ModalType } from '../types';
 
 export class ModalManager {
   private ui: UIManager;
@@ -7,7 +8,7 @@ export class ModalManager {
     this.ui = ui;
   }
 
-  showSaveErrorModal(message: string): Promise<'retry' | 'discard' | 'cancel'> {
+  showSaveErrorModal(message: string): Promise<SaveErrorDecision> {
     return new Promise((resolve) => {
       this.ui.elements.saveErrorMessage.textContent = message;
       this.ui.elements.saveErrorModal.classList.add('show');
@@ -31,7 +32,7 @@ export class ModalManager {
     });
   }
 
-  showRenameModal(type: 'note' | 'folder', currentName: string, onConfirm: (newName: string) => void) {
+  showRenameModal(type: ModalType, currentName: string, onConfirm: (newName: string) => void): void {
     this.ui.elements.renameTitle.textContent = `Rename ${type === 'note' ? 'Note' : 'Folder'}`;
     this.ui.elements.renameInput.value = currentName;
     this.ui.elements.renameModal.classList.add('show');
@@ -68,7 +69,7 @@ export class ModalManager {
     this.ui.elements.renameInput.addEventListener('keydown', keyHandler);
   }
 
-  showConfirmModal(message: string, onConfirm: () => void) {
+  showConfirmModal(message: string, onConfirm: () => void): void {
     this.ui.elements.confirmMessage.textContent = message;
     this.ui.elements.confirmModal.classList.add('show');
 
@@ -93,7 +94,7 @@ export class ModalManager {
     this.ui.elements.confirmClose.addEventListener('click', closeConfirm);
   }
 
-  showCreateFolderModal(onCreate: (name: string) => Promise<void>) {
+  showCreateFolderModal(onCreate: (name: string) => Promise<void>): void {
     this.ui.elements.createFolderInput.value = '';
     this.ui.elements.createFolderModal.classList.add('show');
     this.ui.elements.createFolderInput.focus();
@@ -129,7 +130,7 @@ export class ModalManager {
     this.ui.elements.createFolderInput.addEventListener('keydown', keyHandler);
   }
 
-  closeAllModals() {
+  closeAllModals(): void {
     this.ui.closeAllModals();
   }
 }
