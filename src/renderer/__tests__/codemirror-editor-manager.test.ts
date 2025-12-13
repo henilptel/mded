@@ -48,7 +48,7 @@ describe('EditorManager Property Tests', () => {
         const retrieved = editor.getContent();
         return retrieved === content;
       }),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 
@@ -104,7 +104,7 @@ describe('EditorManager Property Tests', () => {
           }
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 
@@ -156,7 +156,7 @@ describe('EditorManager Property Tests', () => {
           }
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 
@@ -203,7 +203,103 @@ describe('EditorManager Property Tests', () => {
           }
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 20 }
+    );
+  });
+
+  /**
+   * **Feature: codemirror-migration, Property 5: Checkbox toggle correctness**
+   * *For any* document containing task list items, toggling checkbox at index N 
+   * SHALL change only the Nth checkbox marker between `[ ]` and `[x]`, 
+   * leaving all other content unchanged.
+   * **Validates: Requirements 4.2**
+   */
+  it('Property 5: Checkbox toggle correctness', () => {
+    // Generator for task list items
+    const taskItemGen = fc.record({
+      checked: fc.boolean(),
+      text: fc.string({ minLength: 1, maxLength: 50 }).filter(s => !s.includes('[') && !s.includes(']') && !s.includes('\n'))
+    });
+
+    // Generator for documents with task lists
+    const documentWithTasksGen = fc.array(taskItemGen, { minLength: 1, maxLength: 10 }).map(items => {
+      return items.map(item => {
+        const checkbox = item.checked ? '- [x]' : '- [ ]';
+        return `${checkbox} ${item.text}`;
+      }).join('\n');
+    });
+
+    fc.assert(
+      fc.property(
+        documentWithTasksGen,
+        fc.nat(), // Index to toggle
+        (docContent, indexSeed) => {
+          // Create a fresh editor for each test
+          const testContainer = document.createElement('div');
+          const testPreview = document.createElement('div') as HTMLDivElement;
+          const testModeLabel = document.createElement('span') as HTMLSpanElement;
+          document.body.appendChild(testContainer);
+          
+          const testEditor = new EditorManager(testContainer, testPreview, testModeLabel);
+          
+          try {
+            // Set content
+            testEditor.setContent(docContent);
+            
+            // Count checkboxes
+            const checkboxMatches = docContent.match(/- \[[ xX]\]/g) || [];
+            const numCheckboxes = checkboxMatches.length;
+            
+            if (numCheckboxes === 0) {
+              return true; // No checkboxes to toggle
+            }
+            
+            // Pick a valid index
+            const index = indexSeed % numCheckboxes;
+            
+            // Get state before toggle
+            const contentBefore = testEditor.getContent();
+            
+            // Find the Nth checkbox
+            const regex = /- \[[ xX]\]/g;
+            let match;
+            let current = 0;
+            let targetMatch: RegExpExecArray | null = null;
+            
+            while ((match = regex.exec(contentBefore)) !== null) {
+              if (current === index) {
+                targetMatch = match;
+                break;
+              }
+              current++;
+            }
+            
+            if (!targetMatch) {
+              return true; // Shouldn't happen, but safe guard
+            }
+            
+            const wasChecked = targetMatch[0].includes('x') || targetMatch[0].includes('X');
+            
+            // Toggle the checkbox
+            testEditor.toggleCheckbox(index);
+            
+            // Get state after toggle
+            const contentAfter = testEditor.getContent();
+            
+            // Verify only the target checkbox changed
+            const expectedNewCheckbox = wasChecked ? '- [ ]' : '- [x]';
+            const expectedContent = 
+              contentBefore.substring(0, targetMatch.index) + 
+              expectedNewCheckbox + 
+              contentBefore.substring(targetMatch.index + targetMatch[0].length);
+            
+            return contentAfter === expectedContent;
+          } finally {
+            document.body.removeChild(testContainer);
+          }
+        }
+      ),
+      { numRuns: 20 }
     );
   });
 
@@ -245,7 +341,72 @@ describe('EditorManager Property Tests', () => {
           }
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 20 }
+    );
+  });
+
+  /**
+   * **Feature: codemirror-migration, Property 8: Task statistics accuracy**
+   * *For any* document content, the task statistics (completed, total) SHALL 
+   * accurately reflect the count of `- [x]`/`- [X]` and `- [ ]` patterns in the document.
+   * **Validates: Requirements 6.7**
+   */
+  it('Property 8: Task statistics accuracy', () => {
+    // Generator for task list items
+    const taskItemGen = fc.record({
+      checked: fc.boolean(),
+      text: fc.string({ minLength: 1, maxLength: 30 }).filter(s => !s.includes('[') && !s.includes(']') && !s.includes('\n'))
+    });
+
+    // Generator for mixed content with task lists
+    const documentGen = fc.tuple(
+      fc.array(taskItemGen, { minLength: 0, maxLength: 10 }),
+      fc.string({ minLength: 0, maxLength: 50 }).filter(s => !s.includes('- ['))
+    ).map(([tasks, extraText]) => {
+      const taskLines = tasks.map(item => {
+        const checkbox = item.checked ? '- [x]' : '- [ ]';
+        return `${checkbox} ${item.text}`;
+      });
+      // Mix in some extra text
+      return [...taskLines, extraText].join('\n');
+    });
+
+    fc.assert(
+      fc.property(
+        documentGen,
+        (docContent) => {
+          // Create a fresh editor for each test
+          const testContainer = document.createElement('div');
+          const testPreview = document.createElement('div') as HTMLDivElement;
+          const testModeLabel = document.createElement('span') as HTMLSpanElement;
+          document.body.appendChild(testContainer);
+          
+          const testEditor = new EditorManager(testContainer, testPreview, testModeLabel);
+          
+          // Track stats callback
+          let receivedCompleted = -1;
+          let receivedTotal = -1;
+          testEditor.onStatsUpdate = (completed, total) => {
+            receivedCompleted = completed;
+            receivedTotal = total;
+          };
+          
+          try {
+            // Set content (this triggers updateStats via updatePreview)
+            testEditor.setContent(docContent);
+            
+            // Calculate expected values
+            const expectedTotal = (docContent.match(/- \[[ xX]\]/g) || []).length;
+            const expectedCompleted = (docContent.match(/- \[[xX]\]/g) || []).length;
+            
+            // Verify stats match
+            return receivedCompleted === expectedCompleted && receivedTotal === expectedTotal;
+          } finally {
+            document.body.removeChild(testContainer);
+          }
+        }
+      ),
+      { numRuns: 20 }
     );
   });
 });

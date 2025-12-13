@@ -49,81 +49,81 @@
 - [x] 3. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [-] 4. Implement preview mode and checkbox toggling
-  - [ ] 4.1 Implement togglePreview() and updatePreview() methods
+- [x] 4. Implement preview mode and checkbox toggling
+  - [x] 4.1 Implement togglePreview() and updatePreview() methods
     - Toggle visibility between CodeMirror view and preview div
     - Update modeLabel text on toggle
     - Render markdown to HTML using marked library
     - Apply syntax highlighting to code blocks with highlight.js
     - _Requirements: 4.1_
-  - [ ] 4.2 Implement toggleCheckbox() method
+  - [x] 4.2 Implement toggleCheckbox() method
     - Find Nth checkbox pattern in document
     - Toggle between `[ ]` and `[x]`
     - Dispatch transaction to update only that position
     - Trigger updatePreview() and onInput callback
     - _Requirements: 4.2_
-  - [ ] 4.3 Write property test for checkbox toggle
+  - [x] 4.3 Write property test for checkbox toggle
     - **Property 5: Checkbox toggle correctness**
     - **Validates: Requirements 4.2**
-  - [ ] 4.4 Implement updateStats() method and onStatsUpdate callback
+  - [x] 4.4 Implement updateStats() method and onStatsUpdate callback
     - Count `- [ ]` and `- [x]` patterns in document
     - Invoke onStatsUpdate callback with (completed, total)
     - _Requirements: 6.7_
-  - [ ] 4.5 Write property test for task statistics
+  - [x] 4.5 Write property test for task statistics
     - **Property 8: Task statistics accuracy**
     - **Validates: Requirements 6.7**
-  - [ ] 4.6 Wire up onInput callback via update listener extension
+  - [x] 4.6 Wire up onInput callback via update listener extension
     - Create extension that listens for document changes
     - Call onInput callback when document changes
     - Call updatePreview() to sync preview
     - _Requirements: 6.6_
 
-- [ ] 5. Checkpoint - Ensure all tests pass
+- [x] 5. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 6. Implement markdown editing features
-  - [ ] 6.1 Implement insertMarkdown() method
+  - [x] 6.1 Implement insertMarkdown() method
     - Get current selection from EditorView
     - Check if selection is already wrapped with markers
     - Toggle wrapping or insert new markers
     - Update selection to highlight inserted content
     - _Requirements: 4.8_
-  - [ ] 6.2 Implement insertLineMarkdown() method
+  - [x] 6.2 Implement insertLineMarkdown() method
     - Find line boundaries from cursor position
     - Toggle line prefix (headers, quotes, etc.)
     - _Requirements: 4.8_
-  - [ ] 6.3 Implement duplicateLine() and deleteCurrentLine() methods
+  - [x] 6.3 Implement duplicateLine() and deleteCurrentLine() methods
     - Use CodeMirror transactions for undoable operations
     - _Requirements: 4.8_
-  - [ ] 6.4 Implement list continuation on Enter key
+  - [x] 6.4 Implement list continuation on Enter key
     - Create keymap extension for Enter handling
     - Detect list item patterns (bullets, numbers, checkboxes)
     - Continue list or exit on empty item
     - _Requirements: 4.5_
-  - [ ] 6.5 Implement auto-pairing for brackets and quotes
+  - [x] 6.5 Implement auto-pairing for brackets and quotes
     - Create extension for character input handling
     - Insert matching close character for `(`, `[`, `{`, `*`, `` ` ``, `"`, `'`
     - Wrap selection if text is selected
     - _Requirements: 4.6_
 
-- [ ] 7. Implement paste handling and font size
-  - [ ] 7.1 Implement image paste handling
+- [x] 7. Implement paste handling and font size
+  - [x] 7.1 Implement image paste handling
     - Create paste event handler extension
     - Detect image data in clipboard
     - Save image via electron API
     - Insert markdown image reference
     - _Requirements: 4.3_
-  - [ ] 7.2 Implement terminal output paste detection
+  - [x] 7.2 Implement terminal output paste detection
     - Detect terminal patterns in pasted text
     - Wrap in code block with appropriate language
     - _Requirements: 4.4_
-  - [ ] 7.3 Implement changeFontSize() method
+  - [x] 7.3 Implement changeFontSize() method
     - Update CodeMirror theme with new font size
     - Update preview div font size
     - Clamp to min/max bounds (10-32px)
     - _Requirements: 4.7_
 
-- [ ] 8. Integrate with existing application
+- [-] 8. Integrate with existing application
   - [ ] 8.1 Update index.html to use div container instead of textarea
     - Replace `<textarea id="editor">` with `<div id="editor-container">`
     - Ensure container has appropriate styling
