@@ -80,9 +80,16 @@ async function refreshFolders() {
       });
     },
     onDrop: async (noteId, sourceFolder, targetFolder) => {
-      await noteManager.moveNoteToFolder(noteId, sourceFolder, targetFolder);
-      ui.showToast(`Moved to ${targetFolder}`, 'success');
-      refreshNotes();
+      try {
+        await noteManager.moveNoteToFolder(noteId, sourceFolder, targetFolder);
+        // Update the tab if this note is open
+        tabManager.updateTabNoteFolder(noteId, sourceFolder, targetFolder);
+        ui.showToast(`Moved to ${targetFolder}`, 'success');
+        await refreshNotes();
+      } catch (error) {
+        console.error('Failed to move note:', error);
+        ui.showToast(`Failed to move note: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+      }
     }
   });
 }
@@ -519,10 +526,12 @@ ui.elements.commandPaletteInput.addEventListener('keydown', (e) => {
 
   if (e.key === 'ArrowDown') {
     e.preventDefault();
+    if (filteredPaletteNotes.length === 0) return;
     commandPaletteSelectedIndex = (commandPaletteSelectedIndex + 1) % filteredPaletteNotes.length;
     renderCommandPaletteResults(filteredPaletteNotes);
   } else if (e.key === 'ArrowUp') {
     e.preventDefault();
+    if (filteredPaletteNotes.length === 0) return;
     commandPaletteSelectedIndex = (commandPaletteSelectedIndex - 1 + filteredPaletteNotes.length) % filteredPaletteNotes.length;
     renderCommandPaletteResults(filteredPaletteNotes);
   } else if (e.key === 'Enter') {
@@ -694,8 +703,10 @@ document.addEventListener('keydown', async (e) => {
   }
 
   isRecordingShortcut = false;
-  recordBtn!.textContent = 'Record';
-  recordBtn!.classList.remove('active');
+  if (recordBtn) {
+    recordBtn.textContent = 'Record';
+    recordBtn.classList.remove('active');
+  }
   document.getElementById('shortcut-display')?.classList.remove('recording');
 });
 

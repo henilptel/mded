@@ -99,11 +99,23 @@ export class ModalManager {
     this.ui.elements.createFolderModal.classList.add('show');
     this.ui.elements.createFolderInput.focus();
 
+    let inProgress = false;
+
     const handleCreate = async () => {
+      if (inProgress) return;
       const name = this.ui.elements.createFolderInput.value.trim();
       if (name) {
-        await onCreate(name);
-        closeCreate();
+        inProgress = true;
+        this.ui.elements.createFolderInput.disabled = true;
+        this.ui.elements.createFolderConfirm.disabled = true;
+        try {
+          await onCreate(name);
+          closeCreate();
+        } finally {
+          inProgress = false;
+          this.ui.elements.createFolderInput.disabled = false;
+          this.ui.elements.createFolderConfirm.disabled = false;
+        }
       }
     };
 

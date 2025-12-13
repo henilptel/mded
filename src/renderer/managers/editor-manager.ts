@@ -414,6 +414,10 @@ export class EditorManager {
               };
               reader.onload = async () => {
                   try {
+                      if (typeof window === 'undefined' || !window.electron) {
+                          console.error('Cannot save screenshot: electron API not available');
+                          return;
+                      }
                       const base64Data = reader.result as string;
                       const result = await window.electron.saveScreenshot(base64Data);
                       

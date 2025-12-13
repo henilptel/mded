@@ -84,6 +84,7 @@ export class TabManager {
     const tab: Tab = { id, folder, title, content, modified: false };
     this.openTabs.push(tab);
     this.activeTabIndex = this.openTabs.length - 1;
+    this.noteManager.setCurrentNote(id, folder);
     this.editorManager.setContent(content);
     this.renderTabs();
   }
@@ -112,26 +113,38 @@ export class TabManager {
     const tabFolder = tab.folder;
 
     if (tab.modified) {
-      try {
-        await this.noteManager.saveNote(tab.id, tab.content, tab.folder);
-      } catch (err) {
-        console.error('Failed to save tab before closing:', err);
-        
+      const handleSaveError = async (errorMsg: string) => {
+        console.error('Failed to save tab before closing:', errorMsg);
+
         if (this.onShowSaveError) {
           const decision = await this.onShowSaveError(
             `Failed to save "${tab.title}". What would you like to do?`
           );
 
           const currentTabIndex = this.findTabIndex(tabId, tabFolder);
-          if (currentTabIndex === -1) return;
+          if (currentTabIndex === -1) return { shouldReturn: true };
 
           if (decision === 'retry') {
-            return this.closeTab(currentTabIndex);
+            await this.closeTab(currentTabIndex);
+            return { shouldReturn: true };
           } else if (decision === 'cancel') {
-            return;
+            return { shouldReturn: true };
           }
-          index = currentTabIndex;
         }
+        return { shouldReturn: false };
+      };
+
+      try {
+        const result = await this.noteManager.saveNote(tab.id, tab.content, tab.folder);
+        if (!result || !result.success) {
+          const errorMsg = result?.error || 'Unknown error';
+          const { shouldReturn } = await handleSaveError(errorMsg);
+          if (shouldReturn) return;
+        }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        const { shouldReturn } = await handleSaveError(errorMsg);
+        if (shouldReturn) return;
       }
     }
 
@@ -225,6 +238,20 @@ export class TabManager {
       }
     }
     if (changed) {
+      this.renderTabs();
+    }
+  }
+
+  // Update a single tab's folder when note is moved
+  updateTabNoteFolder(noteId: string, oldFolder: string, newFolder: string): void {
+    const idx = this.findTabIndex(noteId, oldFolder);
+    const tab = idx >= 0 ? this.openTabs[idx] : undefined;
+    if (tab) {
+      tab.folder = newFolder;
+      // Also update noteManager's current note if this is the active tab
+      if (idx === this.activeTabIndex) {
+        this.noteManager.setCurrentNote(noteId, newFolder);
+      }
       this.renderTabs();
     }
   }
