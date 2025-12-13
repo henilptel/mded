@@ -238,18 +238,24 @@ pub async fn save_quick_note(
     match filesystem.save_note(&note_id, &formatted_content, None) {
         Ok(()) => {
             // Show notification
-            let _ = app.notification()
+            if let Err(e) = app.notification()
                 .builder()
                 .title("Quick Note Saved")
                 .body("Your quick note has been saved")
-                .show();
+                .show() {
+                eprintln!("Failed to show notification: {:?}", e);
+            }
             
             // Emit refresh-notes event to update the UI
-            let _ = app.emit("refresh-notes", note_id.clone());
+            if let Err(e) = app.emit("refresh-notes", note_id.clone()) {
+                eprintln!("Failed to emit refresh-notes event: {:?}", e);
+            }
             
             // Hide the quick note window
             if let Some(window) = app.get_webview_window("quick-note") {
-                let _ = window.hide();
+                if let Err(e) = window.hide() {
+                    eprintln!("Failed to hide quick-note window: {:?}", e);
+                }
             }
             
             Ok(ApiResult::with_note_id(note_id))

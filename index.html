@@ -9,6 +9,7 @@
   </head>
   <body>
     <div class="app">
+      <div class="minimal-drag-handle" data-tauri-drag-region></div>
       <div class="titlebar">
         <div class="titlebar-drag" data-tauri-drag-region>
           <button
@@ -30,7 +31,11 @@
           </button>
           <span class="app-title">MDed</span>
           <span id="save-indicator" class="save-indicator">Saved</span>
-          <span id="stats-indicator" class="save-indicator" style="margin-left: 10px; opacity: 1;"></span>
+          <span
+            id="stats-indicator"
+            class="save-indicator"
+            style="margin-left: 10px; opacity: 1"
+          ></span>
         </div>
         <div class="window-controls">
           <button
@@ -68,7 +73,9 @@
               stroke-width="2"
             >
               <circle cx="12" cy="12" r="3"></circle>
-              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+              <path
+                d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+              ></path>
             </svg>
           </button>
           <button
@@ -189,17 +196,42 @@
                 class="search-input"
               />
               <div class="sort-wrapper">
-                  <button id="sort-trigger-btn" class="sort-trigger-btn" title="Sort Notes">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
-                  </button>
-                  <div id="sort-menu" class="dropdown-menu glass">
-                     <div class="dropdown-item active" data-value="modified-desc">Date Modified (Newest)</div>
-                     <div class="dropdown-item" data-value="modified-asc">Date Modified (Oldest)</div>
-                     <div class="dropdown-item" data-value="created-desc">Date Created (Newest)</div>
-                     <div class="dropdown-item" data-value="created-asc">Date Created (Oldest)</div>
-                     <div class="dropdown-item" data-value="title-asc">Name (A-Z)</div>
-                     <div class="dropdown-item" data-value="title-desc">Name (Z-A)</div>
+                <button
+                  id="sort-trigger-btn"
+                  class="sort-trigger-btn"
+                  title="Sort Notes"
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M3 6h18M6 12h12M10 18h4" />
+                  </svg>
+                </button>
+                <div id="sort-menu" class="dropdown-menu glass">
+                  <div class="dropdown-item active" data-value="modified-desc">
+                    Date Modified (Newest)
                   </div>
+                  <div class="dropdown-item" data-value="modified-asc">
+                    Date Modified (Oldest)
+                  </div>
+                  <div class="dropdown-item" data-value="created-desc">
+                    Date Created (Newest)
+                  </div>
+                  <div class="dropdown-item" data-value="created-asc">
+                    Date Created (Oldest)
+                  </div>
+                  <div class="dropdown-item" data-value="title-asc">
+                    Name (A-Z)
+                  </div>
+                  <div class="dropdown-item" data-value="title-desc">
+                    Name (Z-A)
+                  </div>
+                </div>
               </div>
             </div>
             <div class="notes-list" id="notes-list"></div>
@@ -435,9 +467,22 @@
       </div>
 
       <!-- Exit Minimal Mode Button -->
-      <button class="exit-minimal-btn" id="exit-minimal-btn" title="Exit Minimal Mode">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+      <button
+        class="exit-minimal-btn"
+        id="exit-minimal-btn"
+        title="Exit Minimal Mode"
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"
+          ></path>
         </svg>
       </button>
 
@@ -534,7 +579,8 @@
                 <kbd>Ctrl</kbd>+<kbd>/</kbd><span>Show shortcuts</span>
               </div>
               <div class="shortcut-row">
-                <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd><span>Focus sidebar</span>
+                <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd
+                ><span>Focus sidebar</span>
               </div>
               <div class="shortcut-row">
                 <kbd>Escape</kbd><span>Close modals</span>
@@ -546,7 +592,8 @@
                 <kbd>Ctrl</kbd>+<kbd>Tab</kbd><span>Next tab</span>
               </div>
               <div class="shortcut-row">
-                <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Tab</kbd><span>Previous tab</span>
+                <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Tab</kbd
+                ><span>Previous tab</span>
               </div>
               <div class="shortcut-row">
                 <kbd>Ctrl</kbd>+<kbd>W</kbd><span>Close tab</span>
@@ -617,7 +664,9 @@
               style="margin-bottom: 16px"
             />
             <div style="display: flex; justify-content: flex-end; gap: 8px">
-              <button class="btn-toggle" id="create-folder-cancel">Cancel</button>
+              <button class="btn-toggle" id="create-folder-cancel">
+                Cancel
+              </button>
               <button class="btn-toggle active" id="create-folder-confirm">
                 Create
               </button>
@@ -748,26 +797,37 @@
 
       <!-- Command Palette Modal -->
       <div class="modal-overlay" id="command-palette-modal">
-        <div class="modal glass" style="max-width: 600px;">
+        <div class="modal glass" style="max-width: 600px">
           <div class="modal-header">
-             <h2>Jump to Note</h2>
-             <button class="btn-icon-sm" id="command-palette-close">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <h2>Jump to Note</h2>
+            <button class="btn-icon-sm" id="command-palette-close">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
-             </button>
+            </button>
           </div>
-          <div class="modal-body" style="padding-top: 0;">
+          <div class="modal-body" style="padding-top: 0">
             <input
               type="text"
               id="command-palette-input"
               placeholder="Type to search..."
               class="search-input"
-              style="margin-bottom: 12px; font-size: 16px; padding: 12px;"
+              style="margin-bottom: 12px; font-size: 16px; padding: 12px"
             />
-            <div id="command-palette-results" class="notes-list" style="max-height: 300px; overflow-y: auto;">
-               <!-- Results injected here -->
+            <div
+              id="command-palette-results"
+              class="notes-list"
+              style="max-height: 300px; overflow-y: auto"
+            >
+              <!-- Results injected here -->
             </div>
           </div>
         </div>
@@ -775,11 +835,18 @@
 
       <!-- Display Settings Modal -->
       <div class="modal-overlay" id="display-settings-modal">
-        <div class="modal glass" style="max-width: 420px;">
+        <div class="modal glass" style="max-width: 420px">
           <div class="modal-header">
             <h2>Display Settings</h2>
             <button class="btn-icon-sm" id="display-settings-close">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
@@ -790,11 +857,18 @@
             <div class="settings-section">
               <h3>Window Opacity</h3>
               <div class="slider-container">
-                <input type="range" id="opacity-slider" min="30" max="100" value="100" class="slider" />
+                <input
+                  type="range"
+                  id="opacity-slider"
+                  min="30"
+                  max="100"
+                  value="100"
+                  class="slider"
+                />
                 <span id="opacity-value">100%</span>
               </div>
             </div>
-            
+
             <!-- Auto-Start Control -->
             <div class="settings-section">
               <h3>Startup</h3>
@@ -805,7 +879,13 @@
                   <span class="toggle-slider"></span>
                 </label>
               </div>
-              <div style="font-size: 11px; color: var(--text-quaternary); margin-top: 6px;">
+              <div
+                style="
+                  font-size: 11px;
+                  color: var(--text-quaternary);
+                  margin-top: 6px;
+                "
+              >
                 Launches hidden to tray on startup
               </div>
             </div>

@@ -82,30 +82,46 @@ pub async fn enter_minimal_mode(
         y: Some(position.y),
     };
     
-    // Save normal bounds
-    window_manager.save_normal_bounds(current_bounds);
-    
     // Get minimal mode bounds from config
     let cfg = config.get();
     let minimal_bounds = cfg.minimal_mode_bounds;
     
-    // Set always on top
-    window.set_always_on_top(true)
-        .map_err(|e| format!("Failed to set always on top: {}", e))?;
-    
-    // Resize to minimal bounds
-    window.set_size(tauri::Size::Physical(tauri::PhysicalSize {
-        width: minimal_bounds.width,
-        height: minimal_bounds.height,
-    })).map_err(|e| format!("Failed to resize window: {}", e))?;
-    
-    // Position if specified
-    if let (Some(x), Some(y)) = (minimal_bounds.x, minimal_bounds.y) {
-        window.set_position(tauri::Position::Physical(tauri::PhysicalPosition { x, y }))
-            .map_err(|e| format!("Failed to position window: {}", e))?;
+    // 1. Set always on top
+    if let Err(e) = window.set_always_on_top(true) {
+        return Err(format!("Failed to set always on top: {}", e));
     }
     
-    // Set minimal mode state
+    // 2. Resize to minimal bounds
+    if let Err(e) = window.set_size(tauri::Size::Physical(tauri::PhysicalSize {
+        width: minimal_bounds.width,
+        height: minimal_bounds.height,
+    })) {
+        // Rollback always on top
+        let _ = window.set_always_on_top(false);
+        return Err(format!("Failed to resize window: {}", e));
+    }
+    
+    // 3. Position if specified
+    if let (Some(x), Some(y)) = (minimal_bounds.x, minimal_bounds.y) {
+        if let Err(e) = window.set_position(tauri::Position::Physical(tauri::PhysicalPosition { x, y })) {
+            // Rollback size
+            let _ = window.set_size(tauri::Size::Physical(tauri::PhysicalSize {
+                width: size.width,
+                height: size.height,
+            }));
+            // Rollback position (to ensure consistency)
+            let _ = window.set_position(tauri::Position::Physical(tauri::PhysicalPosition { 
+                x: position.x, 
+                y: position.y 
+            }));
+            // Rollback always on top
+            let _ = window.set_always_on_top(false);
+            return Err(format!("Failed to position window: {}", e));
+        }
+    }
+    
+    // All operations succeeded, now update the state
+    window_manager.save_normal_bounds(current_bounds);
     window_manager.set_minimal_mode(true);
     
     Ok(ApiResult::success())
@@ -233,7 +249,7 @@ pub async fn set_window_opacity(
 
 /// Gets display information for the primary monitor.
 /// 
-/// Returns the work area dimensions and position.
+/// Returns the monitor dimensions and position.
 /// 
 /// # Requirements
 /// Validates: Requirements 18.1
